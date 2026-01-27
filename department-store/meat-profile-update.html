@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Update Meat Profile – MartBridge</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+}
+
+body{
+  min-height:100vh;
+  background: linear-gradient(135deg, #eafff3, #f4fffb);
+  display:flex;
+  justify-content:center;
+  align-items:center;
+}
+
+/* MAIN CARD */
+.card{
+  width:100%;
+  max-width:420px;
+  background: rgba(255,255,255,0.95);
+  border-radius:26px;
+  padding:30px 26px;
+  box-shadow:0 25px 70px rgba(0,0,0,0.08);
+  text-align:center;
+  animation:fade 0.6s ease;
+}
+
+@keyframes fade{
+  from{opacity:0; transform:translateY(20px);}
+  to{opacity:1; transform:translateY(0);}
+}
+
+/* TITLE */
+.card h2{
+  color:#0bb15d;
+  font-size:24px;
+  margin-bottom:6px;
+}
+
+.subtitle{
+  font-size:13px;
+  color:#6fa58a;
+  margin-bottom:22px;
+}
+
+/* IMAGE */
+.img-box{
+  position:relative;
+  width:120px;
+  height:120px;
+  margin:0 auto 20px;
+}
+
+.img-box img{
+  width:100%;
+  height:100%;
+  border-radius:50%;
+  object-fit:cover;
+  border:4px solid #0bb15d;
+  background:#f0fff7;
+}
+
+.img-box input{ display:none; }
+
+.upload-btn{
+  position:absolute;
+  bottom:5px;
+  right:5px;
+  width:34px;
+  height:34px;
+  border-radius:50%;
+  background:#0bb15d;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:white;
+  font-size:18px;
+  cursor:pointer;
+  border:3px solid white;
+}
+
+/* INPUTS */
+.group{ text-align:left; margin-bottom:12px; }
+
+.group label{
+  font-size:12px;
+  color:#4a7c63;
+}
+
+.group input{
+  width:100%;
+  margin-top:6px;
+  padding:13px 14px;
+  border-radius:14px;
+  border:1px solid #d9f3e6;
+  outline:none;
+  font-size:14px;
+}
+
+.group input:focus{
+  border-color:#0bb15d;
+  box-shadow:0 0 0 2px rgba(11,177,93,0.12);
+}
+
+/* BUTTON */
+button{
+  width:100%;
+  margin-top:16px;
+  padding:14px;
+  border:none;
+  border-radius:30px;
+  background:linear-gradient(135deg,#0bb15d,#14d87a);
+  color:white;
+  font-size:16px;
+  font-weight:700;
+  cursor:pointer;
+}
+
+.footer{
+  margin-top:14px;
+  font-size:12px;
+  color:#6fa58a;
+}
+</style>
+</head>
+
+<body>
+
+<div class="card">
+  <h2>Update Meat Store Profile</h2>
+  <div class="subtitle">Manage your meat store details</div>
+
+  <!-- IMAGE -->
+  <div class="img-box">
+    <img id="preview" src="https://cdn-icons-png.flaticon.com/512/869/869636.png">
+    <label for="imgInput" class="upload-btn">✎</label>
+    <input type="file" id="imgInput" accept="image/*">
+  </div>
+
+  <form id="updateForm">
+
+    <div class="group">
+      <label>Owner Name</label>
+      <input type="text" id="ownerName">
+    </div>
+
+    <div class="group">
+      <label>Email</label>
+      <input type="email" id="email">
+    </div>
+
+    <div class="group">
+      <label>Store Name</label>
+      <input type="text" id="storeName">
+    </div>
+
+    <div class="group">
+      <label>Location</label>
+      <input type="text" id="location">
+    </div>
+
+    <div class="group">
+      <label>Phone</label>
+      <input type="tel" id="phone">
+    </div>
+
+    <div class="group">
+      <label>UPI ID</label>
+      <input type="text" id="upi">
+    </div>
+
+    <button type="submit">Update Profile</button>
+  </form>
+
+  <div class="footer">Changes will reflect in your dashboard</div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+
+  // ✅ CORRECT ID
+  const meatId = localStorage.getItem("meatId");
+  if(!meatId){
+    alert("Please login again");
+    window.location.href = "meat-register.html";
+    return;
+  }
+
+  let imageData = "";
+
+  // ✅ Load meat profile
+  fetch(`http://localhost:5000/api/meat/${meatId}`)
+    .then(res => res.json())
+    .then(data => {
+      ownerName.value = data.ownerName || "";
+      email.value = data.email || "";
+      storeName.value = data.storeName || "";
+      location.value = data.location || "";
+      phone.value = data.phone || "";
+      upi.value = data.upi || "";
+
+      if(data.profileImage){
+        preview.src = data.profileImage;
+        imageData = data.profileImage;
+      }
+    })
+    .catch(err => {
+      console.error(err);
+      alert("Failed to load meat profile");
+    });
+
+  // ✅ Image upload
+  imgInput.addEventListener("change", function(){
+    const file = this.files[0];
+    if(file){
+      const reader = new FileReader();
+      reader.onload = () => {
+        imageData = reader.result;
+        preview.src = imageData;
+      }
+      reader.readAsDataURL(file);
+    }
+  });
+
+  // ✅ Update meat profile
+  updateForm.addEventListener("submit", async function(e){
+    e.preventDefault();
+
+    try{
+      const res = await fetch(`http://localhost:5000/api/meat/update/${meatId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ownerName: ownerName.value,
+          email: email.value,
+          storeName: storeName.value,
+          location: location.value,
+          phone: phone.value,
+          upi: upi.value,
+          profileImage: imageData
+        })
+      });
+
+      const data = await res.json();
+
+      if(res.ok){
+        alert("✅ Meat profile updated");
+        window.location.href = "meat-dashboard.html";
+      }else{
+        alert("❌ " + data.error);
+      }
+
+    }catch(err){
+      console.error(err);
+      alert("Server error while updating");
+    }
+  });
+
+});
+</script>
+
+</body>
+</html>

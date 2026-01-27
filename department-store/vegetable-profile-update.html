@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Update Profile – MartBridge</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+}
+
+body{
+  min-height:100vh;
+  background: linear-gradient(135deg, #eafff3, #f4fffb);
+  display:flex;
+  justify-content:center;
+  align-items:center;
+}
+
+/* MAIN CARD */
+.card{
+  width:100%;
+  max-width:420px;
+  background: rgba(255,255,255,0.95);
+  border-radius:26px;
+  padding:30px 26px;
+  box-shadow:0 25px 70px rgba(0,0,0,0.08);
+  text-align:center;
+  animation:fade 0.6s ease;
+}
+
+@keyframes fade{
+  from{opacity:0; transform:translateY(20px);}
+  to{opacity:1; transform:translateY(0);}
+}
+
+/* TITLE */
+.card h2{
+  color:#0bb15d;
+  font-size:24px;
+  margin-bottom:6px;
+}
+
+.subtitle{
+  font-size:13px;
+  color:#6fa58a;
+  margin-bottom:22px;
+}
+
+/* IMAGE */
+.img-box{
+  position:relative;
+  width:120px;
+  height:120px;
+  margin:0 auto 20px;
+}
+
+.img-box img{
+  width:100%;
+  height:100%;
+  border-radius:50%;
+  object-fit:cover;
+  border:4px solid #0bb15d;
+  background:#f0fff7;
+}
+
+.img-box input{
+  display:none;
+}
+
+.upload-btn{
+  position:absolute;
+  bottom:5px;
+  right:5px;
+  width:34px;
+  height:34px;
+  border-radius:50%;
+  background:#0bb15d;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:white;
+  font-size:18px;
+  cursor:pointer;
+  border:3px solid white;
+}
+
+/* INPUTS */
+.group{
+  text-align:left;
+  margin-bottom:12px;
+}
+
+.group label{
+  font-size:12px;
+  color:#4a7c63;
+}
+
+.group input{
+  width:100%;
+  margin-top:6px;
+  padding:13px 14px;
+  border-radius:14px;
+  border:1px solid #d9f3e6;
+  outline:none;
+  font-size:14px;
+}
+
+.group input:focus{
+  border-color:#0bb15d;
+  box-shadow:0 0 0 2px rgba(11,177,93,0.12);
+}
+
+/* BUTTON */
+button{
+  width:100%;
+  margin-top:16px;
+  padding:14px;
+  border:none;
+  border-radius:30px;
+  background:linear-gradient(135deg,#0bb15d,#14d87a);
+  color:white;
+  font-size:16px;
+  font-weight:700;
+  cursor:pointer;
+  transition:0.3s;
+}
+
+button:hover{
+  transform:translateY(-1px);
+  box-shadow:0 12px 30px rgba(11,177,93,0.35);
+}
+
+.footer{
+  margin-top:14px;
+  font-size:12px;
+  color:#6fa58a;
+}
+</style>
+</head>
+
+<body>
+
+<div class="card">
+  <h2>Update Profile</h2>
+  <div class="subtitle">Manage your vegetable Shop details</div>
+
+  <!-- IMAGE -->
+  <div class="img-box">
+    <img id="preview" src="https://cdn-icons-png.flaticon.com/512/869/869636.png">
+    <label for="imgInput" class="upload-btn">✎</label>
+    <input type="file" id="imgInput" accept="image/*">
+  </div>
+
+  <form id="updateForm">
+
+    <div class="group">
+      <label>Owner Name</label>
+      <input type="text" id="ownerName" placeholder="Enter full name">
+    </div>
+
+    <div class="group">
+      <label>Email</label>
+      <input type="email" id="email" placeholder="Enter email">
+    </div>
+
+    <div class="group">
+      <label>Store Name</label>
+      <input type="text" id="storeName" placeholder="Store name">
+    </div>
+
+    <div class="group">
+      <label>Location</label>
+      <input type="text" id="location" placeholder="City, area">
+    </div>
+
+    <div class="group">
+      <label>Phone</label>
+      <input type="tel" id="phone" placeholder="Phone number">
+    </div>
+
+    <div class="group">
+      <label>UPI ID</label>
+      <input type="text" id="upi" placeholder="example@upi">
+    </div>
+
+    <button type="submit">Update Profile</button>
+  </form>
+
+  <div class="footer">Changes will reflect in your dashboard</div>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+  
+    /* LOAD OLD DATA */
+    if(localStorage.getItem("vegImage")){
+      preview.src = localStorage.getItem("vegImage");
+    }
+  
+    ownerName.value = localStorage.getItem("vegOwner") || "";
+    email.value     = localStorage.getItem("vegEmail") || "";
+    storeName.value = localStorage.getItem("vegName") || "";
+    location.value  = localStorage.getItem("vegLocation") || "";
+    phone.value     = localStorage.getItem("vegPhone") || "";
+    upi.value       = localStorage.getItem("vegUpi") || "";
+  
+    /* IMAGE PREVIEW */
+    imgInput.addEventListener("change", function(){
+      const file = this.files[0];
+      if(file){
+        const reader = new FileReader();
+        reader.onload = () => {
+          preview.src = reader.result;
+          localStorage.setItem("vegImage", reader.result);
+        }
+        reader.readAsDataURL(file);
+      }
+    });
+  
+    /* UPDATE PROFILE */
+    updateForm.addEventListener("submit", function(e){
+      e.preventDefault();
+  
+      localStorage.setItem("vegOwner", ownerName.value);
+      localStorage.setItem("vegEmail", email.value);
+      localStorage.setItem("vegName", storeName.value);
+      localStorage.setItem("vegLocation", location.value);
+      localStorage.setItem("vegPhone", phone.value);
+      localStorage.setItem("vegUpi", upi.value);
+  
+      alert("Vegetable profile updated successfully!");
+      window.location.href = "vegetable-dashboard.html";
+    });
+  
+  });
+  </script>
+  
+</body>
+</html>
