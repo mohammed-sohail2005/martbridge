@@ -1,9 +1,8 @@
 const mongoose = require("mongoose");
 
 const meatSchema = new mongoose.Schema({
-  storeName: String,
+  storeName: { type: String, unique: true, required: true },
   ownerName: String,
-  email: String,
   password: String,
   location: String,
   phone: String,

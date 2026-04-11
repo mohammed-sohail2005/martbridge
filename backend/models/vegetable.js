@@ -1,9 +1,8 @@
 const mongoose = require("mongoose");
 
 const vegetableSchema = new mongoose.Schema({
-  storeName: String,
+  storeName: { type: String, unique: true, required: true },
   ownerName: String,
-  email: { type: String, unique: true },
   password: String,
   location: String,
   phone: String,
