@@ -1,0 +1,9 @@
+{
+  "buildCommand": "cd martbridge-react && npm install && npm run build",
+  "outputDirectory": "martbridge-react/dist",
+  "installCommand": "cd martbridge-react && npm install",
+  "framework": "vite",
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}

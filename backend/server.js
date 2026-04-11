@@ -3,6 +3,11 @@ const mongoose = require("mongoose");
 const dotenv = require("dotenv");
 const cors = require("cors");
 const dns = require("dns");
+const multer = require("multer");
+
+// Middleware for FormData handling
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
 
 // 🌍 Fix for Mobile Hotspot DNS Issues
 try {
@@ -101,11 +106,19 @@ app.get("/api/department/:id", async (req, res) => {
 });
 
 // ✅ Update Department Profile
-app.put("/api/department/update/:id", async (req, res) => {
+app.put("/api/department/update/:id", upload.single('profileImage'), async (req, res) => {
   try {
+    const updateData = { ...req.body };
+    
+    // Handle Profile Image if exists
+    if (req.file) {
+      const base64Image = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+      updateData.profileImage = base64Image;
+    }
+
     const updatedDept = await Department.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      updateData,
       { new: true }
     );
 
@@ -113,6 +126,7 @@ app.put("/api/department/update/:id", async (req, res) => {
       return res.status(404).json({ message: "Department not found" });
     }
 
+    console.log("✅ [DEPT UPDATE] Success for:", updatedDept.storeName);
     res.json({
       message: "Profile updated successfully",
       department: updatedDept,
@@ -253,20 +267,17 @@ app.get("/api/meat/:id", async (req, res) => {
 });
 
 // ✅ Update meat profile
-app.put("/api/meat/update/:id", async (req, res) => {
+app.put("/api/meat/update/:id", upload.single('profileImage'), async (req, res) => {
   try {
-    const updatedMeat = await Meat.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-    });
-
-    if (!updatedMeat) {
-      return res.status(404).json({ message: "Meat shop not found" });
+    const updateData = { ...req.body };
+    if (req.file) {
+      updateData.profileImage = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
     }
 
-    res.json({
-      message: "Profile updated successfully",
-      meat: updatedMeat,
-    });
+    const updatedMeat = await Meat.findByIdAndUpdate(req.params.id, updateData, { new: true });
+    if (!updatedMeat) return res.status(404).json({ message: "Meat shop not found" });
+
+    res.json({ message: "Profile updated successfully", meat: updatedMeat });
   } catch (err) {
     console.log("MEAT UPDATE ERROR:", err);
     res.status(500).json({ error: err.message });
@@ -333,20 +344,17 @@ app.get("/api/vegetable/:id", async (req, res) => {
 });
 
 // ✅ Update vegetable profile
-app.put("/api/vegetable/update/:id", async (req, res) => {
+app.put("/api/vegetable/update/:id", upload.single('profileImage'), async (req, res) => {
   try {
-    const updatedVeg = await Vegetable.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-    });
-
-    if (!updatedVeg) {
-      return res.status(404).json({ message: "Vegetable shop not found" });
+    const updateData = { ...req.body };
+    if (req.file) {
+      updateData.profileImage = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
     }
 
-    res.json({
-      message: "Profile updated successfully",
-      vegetable: updatedVeg,
-    });
+    const updatedVeg = await Vegetable.findByIdAndUpdate(req.params.id, updateData, { new: true });
+    if (!updatedVeg) return res.status(404).json({ message: "Vegetable shop not found" });
+
+    res.json({ message: "Profile updated successfully", vegetable: updatedVeg });
   } catch (err) {
     console.log("VEGETABLE UPDATE ERROR:", err);
     res.status(500).json({ error: err.message });
@@ -513,10 +521,13 @@ app.get("/api/hotel/:id", async (req, res) => {
   }
 });
 
-// ✅ Update Hotel Profile (store-type aware)
-app.put("/api/hotel/update/:id", async (req, res) => {
+app.put("/api/hotel/update/:id", upload.single('profileImage'), async (req, res) => {
   try {
-    const updatedHotel = await Hotel.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const updateData = { ...req.body };
+    if (req.file) {
+      updateData.profileImage = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+    }
+    const updatedHotel = await Hotel.findByIdAndUpdate(req.params.id, updateData, { new: true });
     if (!updatedHotel) return res.status(404).json({ message: "Hotel not found" });
 
     const hotelObj = await resolveStoreName(updatedHotel);
