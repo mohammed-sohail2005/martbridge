@@ -19,7 +19,7 @@ const Layout = ({ children }) => {
         </div>
       </header>
       
-      <main className="container main-content">
+      <main className="container main-content fade-in">
         {children}
       </main>
 
@@ -187,6 +187,15 @@ const Layout = ({ children }) => {
           align-items: center;
           padding-top: 40px;
           padding-bottom: 60px;
+        }
+
+        .fade-in {
+          animation: fadeIn 0.4s ease-out;
+        }
+
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
         }
 
         .footer {

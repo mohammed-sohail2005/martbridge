@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import MainDashboard from './pages/MainDashboard';
 import LinkedHotels from './pages/Store/LinkedHotels';
@@ -42,11 +42,18 @@ import HotelPlaceOrder from './pages/Hotel/PlaceOrder';
 import AdminDashboard from './pages/Admin/Dashboard';
 
 import LaborManagement from './pages/LaborManagement';
+import ScrollToTop from './components/ScrollToTop';
+import SplashScreen from './components/SplashScreen';
+import NotFound from './pages/NotFound';
 
 function App() {
+  const [showSplash, setShowSplash] = useState(true);
+
   return (
     <PopupProvider>
+      {showSplash && <SplashScreen onFinish={() => setShowSplash(false)} />}
       <Router>
+        <ScrollToTop />
         <Routes>
           <Route path="/" element={<MainDashboard />} />
           
@@ -97,6 +104,7 @@ function App() {
           <Route path="/admin" element={<AdminDashboard />} />
 
           {/* Add more routes here */}
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </Router>
       <CustomPopup />
