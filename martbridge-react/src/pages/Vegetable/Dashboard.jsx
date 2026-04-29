@@ -168,10 +168,8 @@ const VegetableDashboard = () => {
 
     return (
         <div className="dashboard-page">
-            <button className="logout-btn" onClick={handleLogout}>Logout</button>
-
-            {/* Top Profile */}
-            <div className="topbar">
+            <div className="dashboard-header">
+                <button className="logout-btn" onClick={handleLogout}>Logout</button>
                 <img 
                     src={storeData.profileImage || 'profile.jpg'} 
                     className="profile-icon" 
@@ -330,43 +328,11 @@ const VegetableDashboard = () => {
                     flex-direction: column;
                 }
 
-                .main-overlay {
-                    position: absolute;
-                    inset: 0;
-                    background: rgba(0, 0, 0, 0.6);
-                    z-index: 0;
-                }
-
-                .topbar {
-                    position: fixed;
-                    top: 15px;
-                    right: 20px;
-                    z-index: 10;
-                }
-
-                .profile-icon {
-                    width: 45px;
-                    height: 45px;
-                    border-radius: 50%;
-                    object-fit: cover;
-                    cursor: pointer;
-                    border: 2px solid #00b050;
-                }
-
-                .logout-btn {
-                    position: fixed;
-                    top: 20px;
-                    left: 20px;
-                    padding: 10px 18px;
-                    border: none;
-                    border-radius: 20px;
-                    background: var(--danger-gradient);
-                    color: white;
-                    font-weight: 600;
-                    cursor: pointer;
-                    box-shadow: 0 8px 20px rgba(255, 0, 0, 0.3);
-                    z-index: 999;
-                }
+                .main-overlay { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.6); z-index: 0; }
+                .dashboard-header { position: absolute; top: 0; left: 0; right: 0; padding: 20px; display: flex; justify-content: space-between; align-items: center; z-index: 10; }
+                .profile-icon { width: 45px; height: 45px; border-radius: 50%; object-fit: cover; cursor: pointer; border: 2px solid #00b050; transition: 0.3s; }
+                .profile-icon:hover { transform: scale(1.1); }
+                .logout-btn { padding: 10px 18px; border: none; border-radius: 20px; background: var(--danger-gradient); color: white; font-weight: 600; cursor: pointer; box-shadow: 0 8px 20px rgba(255, 0, 0, 0.3); }
 
                 .overlay-blur {
                     position: fixed;
@@ -422,17 +388,7 @@ const VegetableDashboard = () => {
                     color: #666;
                 }
 
-                .center-content {
-                    position: relative;
-                    z-index: 1;
-                    flex: 1;
-                    display: flex;
-                    flex-direction: column;
-                    justify-content: center;
-                    align-items: center;
-                    text-align: center;
-                    padding: 20px;
-                }
+                .center-content { position: relative; z-index: 1; flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 100px 20px 20px; }
 
                 .center-content h1 { font-size: 48px; margin-bottom: 10px; }
                 .center-content h2 { color: #c8ffe4; margin-bottom: 30px; font-weight: 500; }
@@ -558,8 +514,9 @@ const VegetableDashboard = () => {
                 .inventory-card { position: relative; }
 
                 @media (max-width: 768px) {
-                    .center-content h1 { font-size: 30px; }
-                    .center-content h2 { font-size: 18px; }
+                    .center-content { padding-top: 80px; }
+                    .center-content h1 { font-size: 26px; }
+                    .center-content h2 { font-size: 16px; margin-bottom: 20px; }
                     .add-hotel { padding: 14px 30px; font-size: 16px; }
                     .dash-sections { grid-template-columns: 1fr; margin-top: 20px; gap: 15px; margin-bottom: 40px; }
                     .dash-card { min-height: 120px; padding: 20px; }
@@ -567,7 +524,8 @@ const VegetableDashboard = () => {
                     .dash-card p { font-size: 13px; }
                     .invite-card { width: 90%; max-width: 350px; padding: 25px 15px; }
                     .invite-card h2 { font-size: 20px; }
-                    .logout-btn { top: 15px; left: 15px; padding: 8px 14px; font-size: 12px; }
+                    .logout-btn { padding: 8px 14px; font-size: 11px; }
+                    .dashboard-header { padding: 15px; }
                 }
             `}</style>
         </div>
