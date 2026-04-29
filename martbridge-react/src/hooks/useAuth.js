@@ -2,7 +2,13 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 export const useAuth = (key, redirectPath = '/') => {
-    const [userId, setUserId] = useState(localStorage.getItem(key));
+    const [userId, setUserId] = useState(() => {
+        try {
+            return localStorage?.getItem(key);
+        } catch (e) {
+            return null;
+        }
+    });
     const navigate = useNavigate();
 
     useEffect(() => {
