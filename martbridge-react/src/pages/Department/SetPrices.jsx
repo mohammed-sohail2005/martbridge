@@ -114,7 +114,7 @@ const DepartmentSetPrices = () => {
                     <input type="text" name="unit" value={formData.unit} onChange={handleInputChange} placeholder="Unit (kg, pkt, etc.)" style={{ maxWidth: '120px' }} required />
                     <button type="submit">{editId ? 'Update Item' : 'Add Item'}</button>
                 </form>
-                <div style={{ overflowX: 'auto' }}>
+                <div className="table-responsive">
                     <table>
                         <thead><tr><th>Item Name</th><th>Price (₹)</th><th>Unit</th><th>Actions</th></tr></thead>
                         <tbody>
@@ -151,6 +151,15 @@ const DepartmentSetPrices = () => {
                 .del-btn { color: white; border: none; border-radius: 14px; padding: 8px 12px; cursor: pointer; font-size: 12px; }
                 .del-btn.edit { background: var(--primary-color); }
                 .del-btn.delete { background: #ff4d4d; }
+                @media (max-width: 768px) {
+                    .set-prices-header { flex-direction: column; gap: 15px; text-align: center; }
+                    .set-prices-header h1 { font-size: 18px; }
+                    .card { padding: 15px; }
+                    .form { flex-direction: column; }
+                    .form input { min-width: 100%; }
+                    th, td { padding: 10px; font-size: 13px; }
+                    .price { font-size: 15px; }
+                }
             `}</style>
         </Layout>
     );

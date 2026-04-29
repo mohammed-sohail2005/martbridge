@@ -151,6 +151,7 @@ const HotelDashboard = () => {
                     .index-card h3 { font-size: 18px; }
                     .logout-btn { padding: 8px 14px; font-size: 11px; }
                     .dashboard-header { padding: 15px; }
+                    .profile-popup { width: 92%; }
                 }
             `}</style>
         </div>

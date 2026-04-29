@@ -322,7 +322,47 @@
 }
 
 @media (max-width: 900px) {
+    .labor-mgmt-page {
+        padding: 15px;
+    }
     .labor-content {
         grid-template-columns: 1fr;
+        gap: 20px;
+    }
+    .labor-header h1 {
+        font-size: 1.8rem;
+    }
+    .labor-header p {
+        font-size: 1rem;
     }
 }
+
+@media (max-width: 600px) {
+    .list-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
+    .total-badge {
+        width: 100%;
+        text-align: center;
+    }
+    .labor-cards-grid {
+        grid-template-columns: 1fr;
+    }
+    .labor-card-header {
+        flex-direction: column;
+        gap: 10px;
+    }
+    .labor-actions {
+        width: 100%;
+        justify-content: flex-end;
+    }
+    .upi-ready {
+        flex-direction: column;
+    }
+    .pay-btn, .reupload-btn {
+        width: 100%;
+    }
+}
+

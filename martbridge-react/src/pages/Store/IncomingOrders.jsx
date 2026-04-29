@@ -99,7 +99,7 @@ const StoreIncomingOrders = () => {
             {/* Order Detail Popup */}
             {selectedOrder && (
                 <div className="overlay-blur" onClick={() => setSelectedOrder(null)}>
-                    <div className="order-detail-popup" onClick={e => e.stopPropagation()}>
+                    <div className="order-detail-popup modal-responsive" onClick={e => e.stopPropagation()}>
                         <span className="close-btn" onClick={() => setSelectedOrder(null)}>✕</span>
                         <h3>Order from {selectedOrder.hotelId?.hotelName || 'Hotel'}</h3>
                         <p className="order-meta">📅 {selectedOrder.date} | 📞 {selectedOrder.hotelId?.phone}</p>
@@ -272,7 +272,7 @@ const StoreIncomingOrders = () => {
 
                 .overlay-blur { position: fixed; inset: 0; backdrop-filter: blur(10px); background: rgba(0, 0, 0, 0.4); display: flex; justify-content: center; align-items: center; z-index: 999; }
                 
-                .order-detail-popup { background: white; width: 450px; border-radius: 25px; padding: 30px; position: relative; color: #222; text-align: left; }
+                .order-detail-popup { background: white; border-radius: 25px; position: relative; color: #222; text-align: left; }
                 .close-btn { position: absolute; top: 15px; right: 18px; font-size: 20px; cursor: pointer; color: #666; }
                 
                 .order-meta { font-size: 13px; color: #888; margin-bottom: 20px; }

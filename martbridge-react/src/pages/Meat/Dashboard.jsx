@@ -222,7 +222,7 @@ const MeatDashboard = () => {
 
             {showInventoryPopup && (
                 <div className="overlay-blur" style={{ zIndex: 10002 }} onClick={() => setShowInventoryPopup(false)}>
-                    <div className="inventory-modal" onClick={e => e.stopPropagation()}>
+                    <div className="inventory-modal modal-responsive" onClick={e => e.stopPropagation()}>
                         <h2>📦 Inventory Management</h2>
                         <p>Update stock levels and units.</p>
                         
@@ -340,7 +340,7 @@ const MeatDashboard = () => {
 
 
 
-                .inventory-modal { background: white; width: 450px; border-radius: 25px; padding: 30px; position: relative; color: #222; text-align: center; }
+                .inventory-modal { background: white; border-radius: 25px; position: relative; color: #222; text-align: center; }
                 .inventory-list { margin-top: 20px; max-height: 400px; overflow-y: auto; padding-right: 10px; }
                 .inventory-row { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid #eee; }
                 .prod-meta { text-align: left; }
@@ -363,10 +363,14 @@ const MeatDashboard = () => {
                     .dash-card { min-height: 120px; padding: 20px; }
                     .dash-card h3 { font-size: 16px; }
                     .dash-card p { font-size: 13px; }
-                    .invite-card { width: 90%; max-width: 350px; padding: 25px 15px; }
+                    .invite-card { width: 92%; max-width: 350px; padding: 25px 15px; }
                     .invite-card h2 { font-size: 20px; }
                     .logout-btn { padding: 8px 14px; font-size: 11px; }
                     .dashboard-header { padding: 15px; }
+                    .inventory-modal { width: 95%; padding: 20px; }
+                    .inventory-row { flex-direction: column; align-items: flex-start; gap: 10px; }
+                    .prod-inputs { width: 100%; justify-content: space-between; }
+                    .profile-popup { width: 92%; }
                 }
             `}</style>
         </div>
