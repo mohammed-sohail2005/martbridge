@@ -1,0 +1,21 @@
+{
+  "short_name": "MartBridge",
+  "name": "MartBridge - Smart Supply Platform",
+  "icons": [
+    {
+      "src": "logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#0bb15d",
+  "background_color": "#f4fffb"
+}
