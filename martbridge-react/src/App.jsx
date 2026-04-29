@@ -51,7 +51,9 @@ function App() {
 
   return (
     <PopupProvider>
+      {showSplash && <SplashScreen onFinish={() => setShowSplash(false)} />}
       <Router>
+        <ScrollToTop />
         <Routes>
           <Route path="/" element={<MainDashboard />} />
           
