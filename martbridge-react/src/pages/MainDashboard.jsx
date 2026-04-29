@@ -8,11 +8,11 @@ const MainDashboard = () => {
     useEffect(() => {
         try {
             // Persistent Login Logic: Check for stored IDs and redirect
-            const adminId = localStorage?.getItem('adminId');
-            const deptId = localStorage?.getItem('deptId');
-            const vegId = localStorage?.getItem('vegId');
-            const meatId = localStorage?.getItem('meatId');
-            const hotelId = localStorage?.getItem('hotelId');
+            const adminId = typeof localStorage !== 'undefined' ? localStorage.getItem('adminId') : null;
+            const deptId = typeof localStorage !== 'undefined' ? localStorage.getItem('deptId') : null;
+            const vegId = typeof localStorage !== 'undefined' ? localStorage.getItem('vegId') : null;
+            const meatId = typeof localStorage !== 'undefined' ? localStorage.getItem('meatId') : null;
+            const hotelId = typeof localStorage !== 'undefined' ? localStorage.getItem('hotelId') : null;
 
             if (adminId) navigate('/admin');
             else if (deptId) navigate('/department/dashboard');

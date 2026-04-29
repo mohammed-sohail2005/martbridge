@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 export const useAuth = (key, redirectPath = '/') => {
     const [userId, setUserId] = useState(() => {
         try {
-            return localStorage?.getItem(key);
+            return typeof localStorage !== 'undefined' ? localStorage.getItem(key) : null;
         } catch (e) {
             return null;
         }
