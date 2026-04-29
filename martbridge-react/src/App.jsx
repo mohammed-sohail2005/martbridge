@@ -51,7 +51,7 @@ function App() {
 
   return (
     <PopupProvider>
-      {showSplash && <SplashScreen onFinish={() => setShowSplash(false)} />}
+      {/* {showSplash && <SplashScreen onFinish={() => setShowSplash(false)} />} */}
       <Router>
         <ScrollToTop />
         <Routes>
