@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { usePopup } from '../../context/PopupContext';
+import { API_BASE_URL } from '../../apiConfig';
 
 const VegetableDashboard = () => {
     const navigate = useNavigate();
@@ -12,6 +13,7 @@ const VegetableDashboard = () => {
         storeName: 'Loading...',
         profileImage: 'profile.jpg'
     });
+    const [labors, setLabors] = useState([]);
     const [showProfilePopup, setShowProfilePopup] = useState(false);
     const [showInvitePopup, setShowInvitePopup] = useState(false);
     const [showLinkPopup, setShowLinkPopup] = useState(false);
@@ -22,18 +24,23 @@ const VegetableDashboard = () => {
     const [linkedHotels, setLinkedHotels] = useState([]);
     const [ordersLoading, setOrdersLoading] = useState(false);
     const [hotelsLoading, setHotelsLoading] = useState(false);
+    const [products, setProducts] = useState([]);
+    const [showInventoryPopup, setShowInventoryPopup] = useState(false);
+
 
     useEffect(() => {
         if (vegId) {
             fetchStoreData();
             fetchIncomingOrders();
             fetchLinkedHotels();
+            fetchProducts();
+            fetchLabors();
         }
     }, [vegId]);
 
     const fetchStoreData = async () => {
         try {
-            const res = await fetch(`http://localhost:5000/api/vegetable/${vegId}`);
+            const res = await fetch(`${API_BASE_URL}/api/vegetable/${vegId}`);
             const data = await res.json();
             setStoreData(data);
         } catch (err) {
@@ -42,11 +49,23 @@ const VegetableDashboard = () => {
         }
     };
 
+    const fetchLabors = async () => {
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/labor/owner/${vegId}`);
+            const data = await res.json();
+            setLabors(data);
+        } catch (err) {
+            console.error("Labor fetch error:", err);
+        }
+    };
+
+
+
     const fetchIncomingOrders = async () => {
         setOrdersLoading(true);
         try {
             const today = new Date().toISOString().split('T')[0];
-            const res = await fetch(`http://localhost:5000/api/store/incoming-orders/${vegId}?date=${today}`);
+            const res = await fetch(`${API_BASE_URL}/api/store/incoming-orders/${vegId}?date=${today}`);
             const data = await res.json();
             setIncomingOrders(data);
         } catch (err) {
@@ -59,13 +78,43 @@ const VegetableDashboard = () => {
     const fetchLinkedHotels = async () => {
         setHotelsLoading(true);
         try {
-            const res = await fetch(`http://localhost:5000/api/store/linked-hotels/${vegId}`);
+            const res = await fetch(`${API_BASE_URL}/api/store/linked-hotels/${vegId}`);
             const data = await res.json();
             setLinkedHotels(data);
         } catch (err) {
             console.error("Hotels fetch error:", err);
         } finally {
             setHotelsLoading(false);
+        }
+    };
+
+    const fetchProducts = async () => {
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/product/store/${vegId}`);
+            const data = await res.json();
+            setProducts(data);
+        } catch (err) {
+            console.error("Products fetch error:", err);
+        }
+    };
+
+    const handleUpdateStock = async (prodId, newStock, newUnit) => {
+        setUpdatingStockId(prodId);
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/product/update-stock/${prodId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ stock: newStock, unit: newUnit })
+            });
+            if (res.ok) {
+                fetchProducts();
+            } else {
+                showAlert('Failed to update inventory', 'Error');
+            }
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setUpdatingStockId(null);
         }
     };
 
@@ -85,7 +134,7 @@ const VegetableDashboard = () => {
 
         setInviteLoading(true);
         try {
-            const res = await fetch(`http://localhost:5000/api/store/invite-hotel`, {
+            const res = await fetch(`${API_BASE_URL}/api/store/invite-hotel`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ hotelName: inviteHotelName, storeId: vegId, storeType: "vegetable" })
@@ -114,6 +163,8 @@ const VegetableDashboard = () => {
             showAlert('Link copied to clipboard! ✅', 'Copied');
         });
     };
+
+    const totalMonthlySalary = labors.reduce((sum, l) => sum + l.salary, 0);
 
     return (
         <div className="dashboard-page">
@@ -169,7 +220,6 @@ const VegetableDashboard = () => {
                 </div>
             )}
 
-            {/* Link Popup */}
             {showLinkPopup && (
                 <div className="overlay-blur" style={{ zIndex: 10001 }} onClick={() => setShowLinkPopup(false)}>
                     <div className="invite-card" onClick={e => e.stopPropagation()}>
@@ -186,6 +236,51 @@ const VegetableDashboard = () => {
                     </div>
                 </div>
             )}
+
+            {showInventoryPopup && (
+                <div className="overlay-blur" style={{ zIndex: 10002 }} onClick={() => setShowInventoryPopup(false)}>
+                    <div className="inventory-modal" onClick={e => e.stopPropagation()}>
+                        <h2>📦 Inventory Management</h2>
+                        <p>Update stock levels and units.</p>
+                        
+                        <div className="inventory-list">
+                            {products.length === 0 ? <p>No products found. Add some in "Set Prices".</p> : 
+                                products.map(p => (
+                                    <div key={p._id} className="inventory-row">
+                                        <div className="prod-meta">
+                                            <span className="prod-name">{p.name}</span>
+                                        </div>
+                                        <div className="prod-inputs">
+                                            <div className="input-box">
+                                                <label>Stock</label>
+                                                <input 
+                                                    type="number" 
+                                                    defaultValue={p.stock} 
+                                                    onBlur={(e) => handleUpdateStock(p._id, parseFloat(e.target.value), p.unit)} 
+                                                    disabled={updatingStockId === p._id}
+                                                />
+                                            </div>
+                                            <div className="input-box">
+                                                <label>Unit</label>
+                                                <input 
+                                                    type="text" 
+                                                    defaultValue={p.unit || 'kg'} 
+                                                    onBlur={(e) => handleUpdateStock(p._id, p.stock, e.target.value)} 
+                                                    disabled={updatingStockId === p._id}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))
+                            }
+                        </div>
+                        <span className="close-btn" onClick={() => setShowInventoryPopup(false)}>✕</span>
+                        <button className="done-btn" onClick={() => setShowInventoryPopup(false)}>Done</button>
+                    </div>
+                </div>
+            )}
+
+
 
             <div className="center-content">
                 <h1>VEGETABLE STORE</h1>
@@ -204,6 +299,12 @@ const VegetableDashboard = () => {
                     <p>Orders from connected hotels</p>
                 </div>
 
+                <div className="dash-card labor-card" onClick={() => navigate('/vegetable/labor')}>
+                    <h3>👷 Labor Card</h3>
+                    <p>{labors.length} Workers</p>
+                    <div className="summary-val">₹{totalMonthlySalary}</div>
+                </div>
+
                 <div className="dash-card" onClick={() => navigate('/vegetable/hotels')}>
                     <h3>🏨 Connected Hotels ({linkedHotels.length})</h3>
                     <p>View all hotels linked to your store</p>
@@ -212,6 +313,10 @@ const VegetableDashboard = () => {
                 <div className="dash-card" onClick={() => navigate('/vegetable/payments')}>
                     <h3>💳 View Payments</h3>
                     <p>Confirm incoming payments</p>
+                </div>
+                <div className="dash-card inventory-card" onClick={() => setShowInventoryPopup(true)}>
+                    <h3>📦 Inventory & Stock</h3>
+                    <p>Track {products.length} stocked items</p>
                 </div>
             </div>
 
@@ -381,6 +486,9 @@ const VegetableDashboard = () => {
                 .dash-card h3 { margin-bottom: 10px; font-size: 20px; }
                 .dash-card p { font-size: 14px; opacity: 0.8; }
 
+                .labor-card { border: 1px solid rgba(255, 193, 7, 0.4); }
+                .labor-card .summary-val { margin-top: 10px; font-weight: 800; color: #ffc107; font-size: 20px; }
+
                 .input-group {
                     position: relative;
                     margin-bottom: 20px;
@@ -433,6 +541,21 @@ const VegetableDashboard = () => {
                     box-shadow: 0 8px 20px rgba(0, 176, 80, 0.3);
                     transition: 0.3s;
                 }
+
+
+
+                .inventory-modal { background: white; width: 450px; border-radius: 25px; padding: 30px; position: relative; color: #222; text-align: center; }
+                .inventory-list { margin-top: 20px; max-height: 400px; overflow-y: auto; padding-right: 10px; }
+                .inventory-row { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid #eee; }
+                .prod-meta { text-align: left; }
+                .prod-name { display: block; font-weight: 700; color: #333; }
+                .prod-inputs { display: flex; gap: 10px; }
+                .input-box { display: flex; flex-direction: column; align-items: center; }
+                .input-box label { font-size: 10px; font-weight: 800; color: #888; margin-bottom: 2px; }
+                .input-box input { width: 60px; padding: 8px; border: 1px solid #ddd; border-radius: 8px; text-align: center; font-weight: 700; }
+                .done-btn { margin-top: 25px; width: 100%; padding: 12px; background: #333; color: white; border: none; border-radius: 12px; cursor: pointer; font-weight: 700; }
+
+                .inventory-card { position: relative; }
 
                 @media (max-width: 768px) {
                     .center-content h1 { font-size: 30px; }

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { usePopup } from '../../context/PopupContext';
+import { API_BASE_URL } from '../../apiConfig';
 
 const HotelDashboard = () => {
     const navigate = useNavigate();
@@ -9,19 +10,19 @@ const HotelDashboard = () => {
     const { userId: hotelId, logout } = useAuth('hotelId', '/hotel/login');
     
     const [hotelData, setHotelData] = useState({ hotelName: 'Loading...', profileImage: 'profile.jpg' });
-    const [shops, setShops] = useState({ vegetables: [], meat: [], department: [] });
+    const [labors, setLabors] = useState([]);
     const [showProfilePopup, setShowProfilePopup] = useState(false);
 
     useEffect(() => {
         if (hotelId) {
             fetchHotelData();
-            fetchLinkedShops();
+            fetchLabors();
         }
     }, [hotelId]);
 
     const fetchHotelData = async () => {
         try {
-            const res = await fetch(`http://localhost:5000/api/hotel/${hotelId}`);
+            const res = await fetch(`${API_BASE_URL}/api/hotel/${hotelId}`);
             const data = await res.json();
             setHotelData(data);
         } catch (err) {
@@ -30,17 +31,17 @@ const HotelDashboard = () => {
         }
     };
 
-    const fetchLinkedShops = async () => {
+    const fetchLabors = async () => {
         try {
-            // In the original app, it seems to fetch shops linked to this hotel
-            // This endpoint might vary based on your backend implementation
-            const res = await fetch(`http://localhost:5000/api/hotel/${hotelId}/shops`);
+            const res = await fetch(`${API_BASE_URL}/api/labor/owner/${hotelId}`);
             const data = await res.json();
-            setShops(data);
+            setLabors(data);
         } catch (err) {
-            console.error(err);
+            console.error("Labor fetch error:", err);
         }
     };
+
+
 
     const handleLogout = async () => {
         const confirmed = await showConfirm('Are you sure you want to logout?', 'Logout');
@@ -49,6 +50,8 @@ const HotelDashboard = () => {
             showAlert('Logged out successfully', 'Goodbye');
         }
     };
+
+    const totalMonthlySalary = labors.reduce((sum, l) => sum + l.salary, 0);
 
     return (
         <div className="dashboard-page hotel">
@@ -92,12 +95,20 @@ const HotelDashboard = () => {
                     <h3>🧾 View Bills</h3>
                     <p>Track your orders and payments</p>
                 </div>
-                {/* Additional cards for ordering if applicable */}
+                
+                <div className="dash-card labor-card" onClick={() => navigate('/hotel/labor')}>
+                    <h3>👷 Labor Card</h3>
+                    <p>{labors.length} Laborers Registered</p>
+                    <div className="summary-val">Total: ₹{totalMonthlySalary}</div>
+                </div>
+
                 <div className="dash-card" onClick={() => navigate('/hotel/place-order')}>
                     <h3>🛒 Place Orders</h3>
                     <p>Order from linked shops</p>
                 </div>
             </div>
+
+
 
             <style jsx="true">{`
                 .dashboard-page.hotel {
@@ -125,14 +136,18 @@ const HotelDashboard = () => {
                 .dash-sections { position: relative; z-index: 2; max-width: 1000px; margin: -40px auto 80px; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 24px; padding: 0 20px; width: 100%; }
                 .dash-card { background: rgba(255, 255, 255, 0.12); backdrop-filter: blur(14px); border-radius: 22px; padding: 28px; min-height: 160px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; cursor: pointer; transition: .3s; border: 1px solid rgba(255, 255, 255, 0.1); }
                 .dash-card:hover { transform: translateY(-6px) scale(1.02); background: rgba(11, 177, 93, 0.25); }
+                
+                .labor-card { border: 1px solid rgba(255, 193, 7, 0.4); }
+                .labor-card .summary-val { margin-top: 10px; font-weight: 800; color: #ffc107; font-size: 20px; }
+
+
 
                 @media (max-width: 768px) {
                     .center-content h1 { font-size: 28px; }
                     .center-content h2 { font-size: 18px; }
                     .dash-sections { grid-template-columns: 1fr; margin-top: 20px; gap: 15px; margin-bottom: 40px; }
                     .dash-card { min-height: 120px; padding: 20px; }
-                    .dash-card h3 { font-size: 18px; }
-                    .dash-card p { font-size: 13px; }
+                    .index-card h3 { font-size: 18px; }
                     .logout-btn { top: 15px; left: 15px; padding: 8px 14px; font-size: 11px; }
                 }
             `}</style>

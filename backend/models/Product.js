@@ -18,6 +18,18 @@ const productSchema = new mongoose.Schema({
         type: Number,
         required: true
     },
+    stock: {
+        type: Number,
+        default: 0
+    },
+    minStock: {
+        type: Number,
+        default: 5
+    },
+    unit: {
+        type: String,
+        default: "kg"
+    },
     createdAt: {
         type: Date,
         default: Date.now

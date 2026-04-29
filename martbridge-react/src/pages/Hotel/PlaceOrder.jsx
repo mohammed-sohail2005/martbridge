@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { usePopup } from '../../context/PopupContext';
 import Layout from '../../components/Layout';
+import { API_BASE_URL } from '../../apiConfig';
 
 const PlaceOrder = () => {
     const navigate = useNavigate();
@@ -39,20 +40,20 @@ const PlaceOrder = () => {
         setLoading(true);
         try {
             // 1. Fetch Hotel Data (to get linkedStoreId and timings)
-            const hotelRes = await fetch(`http://localhost:5000/api/hotel/${hotelId}`);
+            const hotelRes = await fetch(`${API_BASE_URL}/api/hotel/${hotelId}`);
             const hData = await hotelRes.json();
             setHotelData(hData);
             setTimes({ morning: hData.morningOrderTime || '08:00', evening: hData.eveningOrderTime || '19:00' });
 
             // 2. Fetch Products from linked store
             if (hData.linkedStoreId) {
-                const prodRes = await fetch(`http://localhost:5000/api/product/store/${hData.linkedStoreId}`);
+                const prodRes = await fetch(`${API_BASE_URL}/api/product/store/${hData.linkedStoreId}`);
                 const pData = await prodRes.json();
                 setProducts(pData);
             }
 
             // 3. Fetch Bill for the active date
-            const billRes = await fetch(`http://localhost:5000/api/bill/${hotelId}?date=${activeDate}`);
+            const billRes = await fetch(`${API_BASE_URL}/api/bill/${hotelId}?date=${activeDate}`);
             const bData = await billRes.json();
 
             if (bData && !bData.message) {
@@ -96,7 +97,7 @@ const PlaceOrder = () => {
                 ...newOrders[index], 
                 name: product.name, 
                 price: product.price,
-                unit: product.unit || 'kg'
+                unit: product.unit || 'kg' // ✅ Auto-set unit from product
             };
             return newOrders;
         };
@@ -127,6 +128,22 @@ const PlaceOrder = () => {
     const calculateTotal = (orders) => orders.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
     const handleSave = async (specificStatusChange = {}) => {
+        // Stock Validation (only if sending)
+        const checkStock = (orders, segmentName) => {
+            for (const item of orders) {
+                const product = products.find(p => p.name === item.name);
+                if (product && item.quantity > product.stock) {
+                    showAlert(`Insufficient stock for "${item.name}" in ${segmentName} batch. Available: ${product.stock} ${product.unit || 'kg'}`, 'No Stock 🚫');
+                    return false;
+                }
+            }
+            return true;
+        };
+
+        if (specificStatusChange.morning === 'sent' && !checkStock(morningOrders, 'Morning')) return;
+        if (specificStatusChange.evening === 'sent' && !checkStock(eveningOrders, 'Evening')) return;
+        if (specificStatusChange.extra === 'sent' && !checkStock(extraOrders, 'Extra')) return;
+
         setSaving(true);
         try {
             const totalAmount = calculateTotal(morningOrders) + calculateTotal(eveningOrders) + calculateTotal(extraOrders);
@@ -143,7 +160,7 @@ const PlaceOrder = () => {
                 totalAmount
             };
 
-            const res = await fetch('http://localhost:5000/api/bill/save', {
+            const res = await fetch('https://powerful-solace-production-4309.up.railway.app/api/bill/save', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
@@ -154,6 +171,8 @@ const PlaceOrder = () => {
                 if (Object.keys(specificStatusChange).length > 0) {
                     setStatuses({ ...statuses, ...specificStatusChange });
                 }
+                // Refresh data to get updated stock levels
+                fetchInitialData();
             } else {
                 showAlert('Failed to save order', 'Error');
             }
@@ -167,7 +186,7 @@ const PlaceOrder = () => {
 
     const handleUpdateSchedule = async () => {
         try {
-            const res = await fetch(`http://localhost:5000/api/hotel/update-schedule/${hotelId}`, {
+            const res = await fetch(`https://powerful-solace-production-4309.up.railway.app/api/hotel/update-schedule/${hotelId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ morningOrderTime: times.morning, eveningOrderTime: times.evening })
@@ -212,17 +231,24 @@ const PlaceOrder = () => {
                 <div className="items-list">
                     {orders.map((item, index) => (
                         <div key={index} className="order-item-row">
-                            <select 
-                                value={products.find(p => p.name === item.name)?._id || ''}
-                                onChange={(e) => handleProductSelect(index, e.target.value, segmentKey)}
-                                disabled={isSent}
-                                className="product-select"
-                            >
-                                <option value="">Select Item from Store...</option>
-                                {products.map(p => (
-                                    <option key={p._id} value={p._id}>{p.name}</option>
-                                ))}
-                            </select>
+                            <div className="product-col">
+                                <select 
+                                    value={products.find(p => p.name === item.name)?._id || ''}
+                                    onChange={(e) => handleProductSelect(index, e.target.value, segmentKey)}
+                                    disabled={isSent}
+                                    className="product-select"
+                                >
+                                    <option value="">Select Item from Store...</option>
+                                    {products.map(p => (
+                                        <option key={p._id} value={p._id}>{p.name}</option>
+                                    ))}
+                                </select>
+                                {item.name && (
+                                    <span className={`stock-info ${products.find(p => p.name === item.name)?.stock <= 0 ? 'out' : ''}`}>
+                                        📦 Stock: {products.find(p => p.name === item.name)?.stock || 0} {products.find(p => p.name === item.name)?.unit || 'kg'}
+                                    </span>
+                                )}
+                            </div>
                             
                             
                             <div className="qty-price">
@@ -307,12 +333,15 @@ const PlaceOrder = () => {
                 </div>
 
                 <div className="store-inventory-reference">
-                    <h3>📋 Store Price List (Current Rates)</h3>
+                    <h3>📋 Store Price List & Availability</h3>
                     <div className="inventory-grid">
                         {products.map(p => (
-                            <div key={p._id} className="inventory-item">
-                                <span className="p-name">{p.name}</span>
-                                <span className="p-price">₹{p.price}</span>
+                            <div key={p._id} className={`inventory-item ${p.stock <= 0 ? 'no-stock' : ''}`}>
+                                <span className="p-name">{p.name} {p.stock <= 0 && '🚫'}</span>
+                                <div className="p-meta">
+                                    <span className="p-stock">Stock: {p.stock} <small>{p.unit || 'kg'}</small></span>
+                                    <span className="p-price">₹{p.price}</span>
+                                </div>
                             </div>
                         ))}
                     </div>
@@ -380,9 +409,17 @@ const PlaceOrder = () => {
 
                     .store-inventory-reference { background: #fffcf0; padding: 20px; border-radius: 20px; margin-bottom: 30px; border: 1px solid #ffeeba; }
                     .store-inventory-reference h3 { font-size: 16px; margin-bottom: 15px; color: #856404; }
-                    .inventory-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; }
-                    .inventory-item { background: white; padding: 8px 12px; border-radius: 10px; display: flex; justify-content: space-between; border: 1px solid #f8f1d8; font-size: 13px; font-weight: 600; }
-                    .p-price { color: var(--primary-color); }
+                    .inventory-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+                    .inventory-item { background: white; padding: 12px; border-radius: 12px; display: flex; flex-direction: column; gap: 8px; border: 1px solid #f8f1d8; font-size: 13px; transition: 0.3s; }
+                    .inventory-item .p-name { font-weight: 800; color: #333; }
+                    .inventory-item .p-meta { display: flex; justify-content: space-between; align-items: center; }
+                    .inventory-item.no-stock { border-color: #ffbaba; background: #fff8f8; }
+                    .p-stock { color: #666; font-size: 11px; }
+                    .p-price { color: var(--primary-color); font-weight: 800; font-size: 15px; }
+
+                    .product-col { position: relative; }
+                    .stock-info { position: absolute; bottom: -8px; left: 5px; font-size: 10px; font-weight: 800; color: #0bb15d; background: white; padding: 0 5px; border-radius: 5px; }
+                    .stock-info.out { color: #ff4d4d; }
 
                     .remove-btn { color: #ff4d4d; background: #fff1f1; border: none; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; }
                     .add-btn { background: #f0fbf5; color: var(--primary-color); border: 1px dashed var(--primary-color); padding: 12px; border-radius: 12px; width: 100%; font-weight: 700; cursor: pointer; margin-top: 10px; }

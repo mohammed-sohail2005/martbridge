@@ -27,7 +27,7 @@ const AdminDashboard = () => {
     const fetchData = async (type) => {
         setLoading(true);
         try {
-            const res = await fetch(`http://localhost:5000/api/admin/${type}`);
+            const res = await fetch(`https://powerful-solace-production-4309.up.railway.app/api/admin/${type}`);
             const result = await res.json();
             setData(result);
         } catch (err) {
@@ -42,7 +42,7 @@ const AdminDashboard = () => {
         const confirmed = await showConfirm('Are you sure you want to delete this store?', 'Confirm Delete');
         if (confirmed) {
             try {
-                const res = await fetch(`http://localhost:5000/api/admin/${type}/${id}`, {
+                const res = await fetch(`https://powerful-solace-production-4309.up.railway.app/api/admin/${type}/${id}`, {
                     method: 'DELETE'
                 });
                 if (res.ok) {

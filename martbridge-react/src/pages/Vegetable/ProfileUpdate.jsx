@@ -19,7 +19,7 @@ const VegetableProfileUpdate = () => {
 
     useEffect(() => {
         if (vegId) {
-            fetch(`http://localhost:5000/api/vegetable/${vegId}`)
+            fetch(`https://powerful-solace-production-4309.up.railway.app/api/vegetable/${vegId}`)
                 .then(res => res.json())
                 .then(data => {
                     setFormData({
@@ -62,7 +62,7 @@ const VegetableProfileUpdate = () => {
         if (profileImage) data.append('profileImage', profileImage);
 
         try {
-            const res = await fetch(`http://localhost:5000/api/vegetable/update/${vegId}`, {
+            const res = await fetch(`https://powerful-solace-production-4309.up.railway.app/api/vegetable/update/${vegId}`, {
                 method: 'PUT',
                 body: data
             });

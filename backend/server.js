@@ -32,6 +32,7 @@ const Hotel = require("./models/Hotel");
 const Product = require("./models/Product");
 const Bill = require("./models/Bill");
 const Payment = require("./models/Payment");
+const Labor = require("./models/Labor");
 const nodemailer = require("nodemailer");
 
 // ========================
@@ -555,7 +556,7 @@ app.get("/api/hotel/by-store/:storeId", async (req, res) => {
 // ✅ Add or Update Product
 app.post("/api/product/add", async (req, res) => {
   try {
-    const { storeId, storeName, name, price } = req.body;
+    const { storeId, storeName, name, price, stock, minStock, unit } = req.body;
 
     // Check if product exists for this store
     let product = await Product.findOne({ storeId, name });
@@ -563,15 +564,44 @@ app.post("/api/product/add", async (req, res) => {
     if (product) {
       // Update existing
       product.price = price;
-      product.storeName = storeName; // Update store name just in case
+      product.storeName = storeName;
+      if (stock !== undefined) product.stock = stock;
+      if (minStock !== undefined) product.minStock = minStock;
+      if (unit !== undefined) product.unit = unit;
       await product.save();
       res.json({ message: "Product updated successfully", product });
     } else {
       // Create new
-      const newProduct = new Product({ storeId, storeName, name, price });
+      const newProduct = new Product({ 
+        storeId, storeName, name, price, 
+        stock: stock || 0, 
+        minStock: minStock || 5,
+        unit: unit || "kg"
+      });
       await newProduct.save();
       res.status(201).json({ message: "Product added successfully", product: newProduct });
     }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ✅ Update Product Inventory Directly
+app.put("/api/product/update-stock/:id", async (req, res) => {
+  try {
+    const { stock, minStock, unit } = req.body;
+    const updateData = {};
+    if (stock !== undefined) updateData.stock = stock;
+    if (minStock !== undefined) updateData.minStock = minStock;
+    if (unit !== undefined) updateData.unit = unit;
+
+    const product = await Product.findByIdAndUpdate(
+      req.params.id,
+      updateData,
+      { new: true }
+    );
+    if (!product) return res.status(404).json({ message: "Product not found" });
+    res.json({ message: "Inventory updated successfully", product });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -633,9 +663,48 @@ app.post("/api/bill/save", async (req, res) => {
         morningStatus: morningStatus || "draft",
         eveningStatus: eveningStatus || "draft",
         extraStatus: extraStatus || "draft",
-        totalAmount
+        totalAmount,
+        pendingAmount: totalAmount // Initialize pendingAmount
       });
       await bill.save();
+    }
+
+    // ✅ Stock Reduction Logic
+    const hotel = await Hotel.findById(hotelId);
+    if (hotel) {
+      const storeId = hotel.linkedStoreId;
+      let billUpdated = false;
+
+      const reduceStock = async (items) => {
+        for (const item of items) {
+          if (item.name && item.quantity) {
+            await Product.findOneAndUpdate(
+              { storeId, name: item.name },
+              { $inc: { stock: -item.quantity } }
+            );
+          }
+        }
+      };
+
+      if (bill.morningStatus === "sent" && !bill.morningStockProcessed) {
+        await reduceStock(bill.morningOrders);
+        bill.morningStockProcessed = true;
+        billUpdated = true;
+      }
+      if (bill.eveningStatus === "sent" && !bill.eveningStockProcessed) {
+        await reduceStock(bill.eveningOrders);
+        bill.eveningStockProcessed = true;
+        billUpdated = true;
+      }
+      if (bill.extraStatus === "sent" && !bill.extraStockProcessed) {
+        await reduceStock(bill.extraOrders);
+        bill.extraStockProcessed = true;
+        billUpdated = true;
+      }
+
+      if (billUpdated) {
+        await bill.save();
+      }
     }
 
     // Also update the hotel's template (for morning/evening only)
@@ -866,6 +935,184 @@ app.get("/api/payments/store/:storeId", async (req, res) => {
   try {
     const payments = await Payment.find({ storeId }).populate("hotelId", "hotelName location profileImage").sort({ createdAt: -1 });
     res.json(payments);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ========================
+// NEW BILL PAYMENT APIs
+// ========================
+
+// ✅ Get Single Bill Details (with store info)
+app.get("/api/bills/:billId", async (req, res) => {
+  try {
+    const bill = await Bill.findById(req.params.billId).populate("hotelId");
+    if (!bill) return res.status(404).json({ message: "Bill not found" });
+
+    const hotel = bill.hotelId;
+    const Model = getStoreModel(hotel.storeType);
+    const store = await Model.findById(hotel.linkedStoreId);
+
+    res.json({
+      bill,
+      storeName: store.storeName,
+      storeUpiId: store.upiId || store.upi // support both fields
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ✅ Hotel submits payment for a specific bill
+app.post("/api/bills/:billId/payment", async (req, res) => {
+  try {
+    const { amount, utrNumber } = req.body;
+    const bill = await Bill.findById(req.params.billId);
+    if (!bill) return res.status(404).json({ message: "Bill not found" });
+
+    bill.payments.push({
+      amount,
+      utrNumber,
+      status: "pending",
+      paidAt: new Date()
+    });
+
+    await bill.save();
+    res.json({ message: "Payment submitted for approval", bill });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ✅ Store owner confirms a payment on a bill
+app.patch("/api/bills/:billId/payment/:paymentId/confirm", async (req, res) => {
+  try {
+    const bill = await Bill.findById(req.params.billId);
+    if (!bill) return res.status(404).json({ message: "Bill not found" });
+
+    const payment = bill.payments.id(req.params.paymentId);
+    if (!payment) return res.status(404).json({ message: "Payment record not found" });
+
+    if (payment.status === "confirmed") {
+        return res.status(400).json({ message: "Payment already confirmed" });
+    }
+
+    payment.status = "confirmed";
+    payment.confirmedAt = new Date();
+    
+    // Deduct from pendingAmount
+    bill.pendingAmount = (bill.pendingAmount || 0) - payment.amount;
+    
+    // If fully paid, optionally update status at the top level
+    if (bill.pendingAmount <= 0) {
+        bill.status = "paid";
+    }
+
+    await bill.save();
+    res.json({ message: "Payment confirmed and balance updated", bill });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ✅ Store owner rejects a payment on a bill
+app.patch("/api/bills/:billId/payment/:paymentId/reject", async (req, res) => {
+  try {
+    const bill = await Bill.findById(req.params.billId);
+    if (!bill) return res.status(404).json({ message: "Bill not found" });
+
+    const payment = bill.payments.id(req.params.paymentId);
+    if (!payment) return res.status(404).json({ message: "Payment record not found" });
+
+    payment.status = "rejected";
+    await bill.save();
+    res.json({ message: "Payment rejected", bill });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ✅ Get all pending bill-level payments for a store
+app.get("/api/store/:storeId/pending-bill-payments", async (req, res) => {
+    try {
+        const storeId = req.params.storeId;
+        
+        // 1. Find all hotels linked to this store
+        const hotels = await Hotel.find({ linkedStoreId: new mongoose.Types.ObjectId(storeId) });
+        const hotelIds = hotels.map(h => h._id);
+
+        // 2. Find bills for these hotels that have pending payments
+        const bills = await Bill.find({
+            hotelId: { $in: hotelIds },
+            "payments.status": "pending"
+        }).populate("hotelId", "hotelName location");
+
+        // 3. Flatten into a list of pending payments
+        let pending = [];
+        bills.forEach(bill => {
+            bill.payments.forEach(pay => {
+                if (pay.status === "pending") {
+                    pending.push({
+                        billId: bill._id,
+                        paymentId: pay._id,
+                        hotelName: bill.hotelId.hotelName,
+                        amount: pay.amount,
+                        utrNumber: pay.utrNumber,
+                        paidAt: pay.paidAt,
+                        date: bill.date
+                    });
+                }
+            });
+        });
+
+        res.json(pending);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// =========================
+// LABOR APIs
+// =========================
+
+// ✅ Add Labor
+app.post("/api/labor/add", async (req, res) => {
+  try {
+    const labor = new Labor(req.body);
+    await labor.save();
+    res.status(201).json({ message: "Labor added successfully", labor });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// ✅ Get Labor by Owner
+app.get("/api/labor/owner/:ownerId", async (req, res) => {
+  try {
+    const labors = await Labor.find({ ownerId: req.params.ownerId }).sort({ createdAt: -1 });
+    res.json(labors);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ✅ Update Labor
+app.put("/api/labor/:id", async (req, res) => {
+  try {
+    const updatedLabor = await Labor.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!updatedLabor) return res.status(404).json({ message: "Labor record not found" });
+    res.json({ message: "Labor updated successfully", labor: updatedLabor });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ✅ Delete Labor
+app.delete("/api/labor/:id", async (req, res) => {
+  try {
+    await Labor.findByIdAndDelete(req.params.id);
+    res.json({ message: "Labor deleted successfully" });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

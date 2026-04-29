@@ -17,7 +17,7 @@ const VegetableLogin = () => {
         setLoading(true);
 
         try {
-            const res = await fetch('http://localhost:5000/api/vegetable/login', {
+            const res = await fetch('https://powerful-solace-production-4309.up.railway.app/api/vegetable/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(formData)

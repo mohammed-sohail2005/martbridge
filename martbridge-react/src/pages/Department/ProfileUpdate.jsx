@@ -19,7 +19,7 @@ const DepartmentProfileUpdate = () => {
 
     useEffect(() => {
         if (deptId) {
-            fetch(`http://localhost:5000/api/department/${deptId}`)
+            fetch(`https://powerful-solace-production-4309.up.railway.app/api/department/${deptId}`)
                 .then(res => res.json())
                 .then(data => {
                     setFormData({
@@ -62,7 +62,7 @@ const DepartmentProfileUpdate = () => {
         if (profileImage) data.append('profileImage', profileImage);
 
         try {
-            const res = await fetch(`http://localhost:5000/api/department/update/${deptId}`, {
+            const res = await fetch(`https://powerful-solace-production-4309.up.railway.app/api/department/update/${deptId}`, {
                 method: 'PUT',
                 body: data
             });

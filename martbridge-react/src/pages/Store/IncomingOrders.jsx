@@ -32,7 +32,7 @@ const StoreIncomingOrders = () => {
     const fetchIncomingOrders = async () => {
         setLoading(true);
         try {
-            const res = await fetch(`http://localhost:5000/api/store/incoming-orders/${storeId}?date=${selectedDate}`);
+            const res = await fetch(`https://powerful-solace-production-4309.up.railway.app/api/store/incoming-orders/${storeId}?date=${selectedDate}`);
             const data = await res.json();
             setIncomingOrders(data);
         } catch (err) {

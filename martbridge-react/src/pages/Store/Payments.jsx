@@ -32,7 +32,7 @@ const StorePayments = () => {
     const fetchPayments = async () => {
         setLoading(true);
         try {
-            const res = await fetch(`http://localhost:5000/api/payments/store/${storeId}`);
+            const res = await fetch(`https://powerful-solace-production-4309.up.railway.app/api/payments/store/${storeId}`);
             const data = await res.json();
             setPayments(data);
         } catch (err) {
@@ -48,7 +48,7 @@ const StorePayments = () => {
         if (!confirm) return;
 
         try {
-            const res = await fetch(`http://localhost:5000/api/payments/${paymentId}/confirm`, {
+            const res = await fetch(`https://powerful-solace-production-4309.up.railway.app/api/payments/${paymentId}/confirm`, {
                 method: "PATCH"
             });
             if (res.ok) {
@@ -68,7 +68,7 @@ const StorePayments = () => {
         if (!confirm) return;
 
         try {
-            const res = await fetch(`http://localhost:5000/api/payments/${paymentId}/reject`, {
+            const res = await fetch(`https://powerful-solace-production-4309.up.railway.app/api/payments/${paymentId}/reject`, {
                 method: "PATCH"
             });
             if (res.ok) {

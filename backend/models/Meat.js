@@ -7,6 +7,7 @@ const meatSchema = new mongoose.Schema({
   location: String,
   phone: String,
   upi: String,
+  upiId: String,
   profileImage: String,
   lat: String,
   lng: String

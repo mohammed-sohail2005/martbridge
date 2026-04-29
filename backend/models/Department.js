@@ -7,6 +7,7 @@ const departmentSchema = new mongoose.Schema({
   location: String,
   phone: String,
   upi: String,
+  upiId: String,
   profileImage: String,
   createdAt: { type: Date, default: Date.now }
 });

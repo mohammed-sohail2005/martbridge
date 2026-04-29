@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { usePopup } from '../../context/PopupContext';
 import Layout from '../../components/Layout';
+import { API_BASE_URL } from '../../apiConfig';
 
 const VegetableSetPrices = () => {
     const navigate = useNavigate();
@@ -10,7 +11,7 @@ const VegetableSetPrices = () => {
     const { userId: vegId } = useAuth('vegId', '/vegetable/register');
     
     const [items, setItems] = useState([]);
-    const [formData, setFormData] = useState({ name: '', price: '' });
+    const [formData, setFormData] = useState({ name: '', price: '', unit: 'kg' });
     const [editId, setEditId] = useState(null);
     const [storeName, setStoreName] = useState('Unknown Store');
 
@@ -23,7 +24,7 @@ const VegetableSetPrices = () => {
 
     const fetchStoreDetails = async () => {
         try {
-            const res = await fetch(`http://localhost:5000/api/vegetable/${vegId}`);
+            const res = await fetch(`${API_BASE_URL}/api/vegetable/${vegId}`);
             const data = await res.json();
             if (data.storeName) setStoreName(data.storeName);
         } catch (e) {
@@ -33,7 +34,7 @@ const VegetableSetPrices = () => {
 
     const fetchProducts = async () => {
         try {
-            const res = await fetch(`http://localhost:5000/api/product/store/${vegId}`);
+            const res = await fetch(`${API_BASE_URL}/api/product/store/${vegId}`);
             const data = await res.json();
             setItems(data);
         } catch (err) {
@@ -58,11 +59,12 @@ const VegetableSetPrices = () => {
             storeId: vegId,
             storeName,
             name,
-            price
+            price,
+            unit
         };
 
         try {
-            const endpoint = editId ? `http://localhost:5000/api/product/${editId}` : "http://localhost:5000/api/product/add";
+            const endpoint = editId ? `${API_BASE_URL}/api/product/${editId}` : "${API_BASE_URL}/api/product/add";
             const method = editId ? "PUT" : "POST";
 
             const res = await fetch(endpoint, {
@@ -72,7 +74,7 @@ const VegetableSetPrices = () => {
             });
 
             if (res.ok) {
-                setFormData({ name: '', price: '' });
+                setFormData({ name: '', price: '', unit: 'kg' });
                 setEditId(null);
                 fetchProducts();
             } else {
@@ -86,7 +88,7 @@ const VegetableSetPrices = () => {
     };
 
     const handleEdit = (item) => {
-        setFormData({ name: item.name, price: item.price });
+        setFormData({ name: item.name, price: item.price, unit: item.unit || 'kg' });
         setEditId(item._id);
         window.scrollTo(0, 0);
     };
@@ -96,7 +98,7 @@ const VegetableSetPrices = () => {
         if (!confirmDelete) return;
 
         try {
-            const res = await fetch(`http://localhost:5000/api/product/${id}`, {
+            const res = await fetch(`${API_BASE_URL}/api/product/${id}`, {
                 method: "DELETE"
             });
 
@@ -137,6 +139,15 @@ const VegetableSetPrices = () => {
                         required
                     />
                     <button type="submit">{editId ? 'Update Item' : 'Add Item'}</button>
+                    <input 
+                        type="text" 
+                        name="unit"
+                        value={formData.unit}
+                        onChange={handleInputChange}
+                        placeholder="Unit (kg, pkt...)"
+                        style={{ maxWidth: '120px' }}
+                        required
+                    />
                 </form>
 
                 <div style={{ overflowX: 'auto' }}>
@@ -145,6 +156,7 @@ const VegetableSetPrices = () => {
                             <tr>
                                 <th>Item Name</th>
                                 <th>Price (₹)</th>
+                                <th>Unit</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -153,6 +165,7 @@ const VegetableSetPrices = () => {
                                 <tr key={item._id}>
                                     <td><b>{item.name}</b></td>
                                     <td><span className="price">₹ {item.price}</span></td>
+                                    <td><span className="unit-tag">{item.unit || 'kg'}</span></td>
                                     <td>
                                         <div style={{ display: 'flex', gap: '10px' }}>
                                             <button className="del-btn edit" onClick={() => handleEdit(item)}>Edit</button>
@@ -251,6 +264,7 @@ const VegetableSetPrices = () => {
                 th { background: var(--primary-color); color: white; font-weight: 600; }
                 
                 .price { color: var(--primary-color); font-weight: 800; font-size: 18px; }
+                .unit-tag { background: #e8f5e9; color: #2e7d32; padding: 4px 10px; border-radius: 8px; font-weight: 700; font-size: 12px; text-transform: lowercase; }
 
                 .del-btn {
                     color: white;

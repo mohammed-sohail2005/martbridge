@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { usePopup } from '../../context/PopupContext';
 import Layout from '../../components/Layout';
+import { API_BASE_URL } from '../../apiConfig';
 
 const MeatSetPrices = () => {
     const navigate = useNavigate();
@@ -10,7 +11,7 @@ const MeatSetPrices = () => {
     const { userId: meatId } = useAuth('meatId', '/meat/register');
     
     const [items, setItems] = useState([]);
-    const [formData, setFormData] = useState({ name: '', price: '' });
+    const [formData, setFormData] = useState({ name: '', price: '', unit: 'kg' });
     const [editId, setEditId] = useState(null);
     const [storeName, setStoreName] = useState('Unknown Store');
 
@@ -23,7 +24,7 @@ const MeatSetPrices = () => {
 
     const fetchStoreDetails = async () => {
         try {
-            const res = await fetch(`http://localhost:5000/api/meat/${meatId}`);
+            const res = await fetch(`${API_BASE_URL}/api/meat/${meatId}`);
             const data = await res.json();
             if (data.storeName) setStoreName(data.storeName);
         } catch (e) {
@@ -33,7 +34,7 @@ const MeatSetPrices = () => {
 
     const fetchProducts = async () => {
         try {
-            const res = await fetch(`http://localhost:5000/api/product/store/${meatId}`);
+            const res = await fetch(`${API_BASE_URL}/api/product/store/${meatId}`);
             const data = await res.json();
             setItems(data);
         } catch (err) {
@@ -58,11 +59,12 @@ const MeatSetPrices = () => {
             storeId: meatId,
             storeName,
             name,
-            price
+            price,
+            unit
         };
 
         try {
-            const endpoint = editId ? `http://localhost:5000/api/product/${editId}` : "http://localhost:5000/api/product/add";
+            const endpoint = editId ? `${API_BASE_URL}/api/product/${editId}` : "${API_BASE_URL}/api/product/add";
             const method = editId ? "PUT" : "POST";
 
             const res = await fetch(endpoint, {
@@ -72,7 +74,7 @@ const MeatSetPrices = () => {
             });
 
             if (res.ok) {
-                setFormData({ name: '', price: '' });
+                setFormData({ name: '', price: '', unit: 'kg' });
                 setEditId(null);
                 fetchProducts();
             } else {
@@ -86,7 +88,7 @@ const MeatSetPrices = () => {
     };
 
     const handleEdit = (item) => {
-        setFormData({ name: item.name, price: item.price });
+        setFormData({ name: item.name, price: item.price, unit: item.unit || 'kg' });
         setEditId(item._id);
         window.scrollTo(0, 0);
     };
@@ -96,7 +98,7 @@ const MeatSetPrices = () => {
         if (!confirmDelete) return;
 
         try {
-            const res = await fetch(`http://localhost:5000/api/product/${id}`, {
+            const res = await fetch(`${API_BASE_URL}/api/product/${id}`, {
                 method: "DELETE"
             });
 
@@ -122,19 +124,21 @@ const MeatSetPrices = () => {
                 <form className="form" onSubmit={handleSubmit}>
                     <input type="text" name="name" value={formData.name} onChange={handleInputChange} placeholder="Item name (Chicken, Mutton...)" required />
                     <input type="number" name="price" value={formData.price} onChange={handleInputChange} placeholder="Price (₹)" required />
+                    <input type="text" name="unit" value={formData.unit} onChange={handleInputChange} placeholder="Unit (kg, pkt, etc.)" style={{ maxWidth: '120px' }} required />
                     <button type="submit">{editId ? 'Update Item' : 'Add Item'}</button>
                 </form>
 
                 <div style={{ overflowX: 'auto' }}>
                     <table>
                         <thead>
-                            <tr><th>Item Name</th><th>Price (₹)</th><th>Actions</th></tr>
+                            <tr><th>Item Name</th><th>Price (₹)</th><th>Unit</th><th>Actions</th></tr>
                         </thead>
                         <tbody>
                             {items.map((item) => (
                                 <tr key={item._id}>
                                     <td><b>{item.name}</b></td>
                                     <td><span className="price">₹ {item.price}</span></td>
+                                    <td><span className="unit-tag">{item.unit || 'kg'}</span></td>
                                     <td>
                                         <div style={{ display: 'flex', gap: '10px' }}>
                                             <button className="del-btn edit" onClick={() => handleEdit(item)}>Edit</button>
@@ -160,6 +164,7 @@ const MeatSetPrices = () => {
                 th, td { padding: 16px; text-align: left; border-bottom: 1px solid #eee; }
                 th { background: var(--primary-color); color: white; }
                 .price { color: var(--primary-color); font-weight: 800; font-size: 18px; }
+                .unit-tag { background: #e8f5e9; color: #2e7d32; padding: 4px 10px; border-radius: 8px; font-weight: 700; font-size: 12px; text-transform: lowercase; }
                 .del-btn { color: white; border: none; border-radius: 14px; padding: 8px 12px; cursor: pointer; font-size: 12px; }
                 .del-btn.edit { background: var(--primary-color); }
                 .del-btn.delete { background: #ff4d4d; }

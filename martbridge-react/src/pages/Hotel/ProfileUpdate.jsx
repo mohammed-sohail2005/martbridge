@@ -19,7 +19,7 @@ const HotelProfileUpdate = () => {
 
     useEffect(() => {
         if (hotelId) {
-            fetch(`http://localhost:5000/api/hotel/${hotelId}`)
+            fetch(`https://powerful-solace-production-4309.up.railway.app/api/hotel/${hotelId}`)
                 .then(res => res.json())
                 .then(data => {
                     setFormData({
@@ -63,7 +63,7 @@ const HotelProfileUpdate = () => {
         if (profileImage) data.append('profileImage', profileImage);
 
         try {
-            const res = await fetch(`http://localhost:5000/api/hotel/update/${hotelId}`, {
+            const res = await fetch(`https://powerful-solace-production-4309.up.railway.app/api/hotel/update/${hotelId}`, {
                 method: 'PUT',
                 body: data
             });

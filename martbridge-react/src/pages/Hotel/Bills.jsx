@@ -13,7 +13,9 @@ const HotelBills = () => {
     const [loading, setLoading] = useState(false);
     const [billingData, setBillingData] = useState(null);
     const [billingError, setBillingError] = useState(false);
-    const [paymentAmount, setPaymentAmount] = useState('');
+    const [activeBill, setActiveBill] = useState(null);
+    const [utrNumber, setUtrNumber] = useState('');
+    const [paymentStep, setPaymentStep] = useState(1); // 1: Amount, 2: UTR
     const [paymentSubmitting, setPaymentSubmitting] = useState(false);
     
     // Store info
@@ -28,7 +30,7 @@ const HotelBills = () => {
     const initializeData = async () => {
         setLoading(true);
         try {
-            const hotelRes = await fetch(`http://localhost:5000/api/hotel/${hotelId}`);
+            const hotelRes = await fetch(`https://powerful-solace-production-4309.up.railway.app/api/hotel/${hotelId}`);
             if (!hotelRes.ok) throw new Error('Could not fetch hotel profile');
             const hotelData = await hotelRes.json();
             
@@ -51,7 +53,7 @@ const HotelBills = () => {
 
     const fetchBills = async () => {
         try {
-            const res = await fetch(`http://localhost:5000/api/bill/history/${hotelId}`);
+            const res = await fetch(`https://powerful-solace-production-4309.up.railway.app/api/bill/history/${hotelId}`);
             if (res.ok) {
                 const data = await res.json();
                 setBills(data);
@@ -64,7 +66,7 @@ const HotelBills = () => {
     const fetchBillingData = async (storeId) => {
         try {
             setBillingError(false);
-            const res = await fetch(`http://localhost:5000/api/billing/${hotelId}/${storeId}`);
+            const res = await fetch(`https://powerful-solace-production-4309.up.railway.app/api/billing/${hotelId}/${storeId}`);
             if (res.ok) {
                 const data = await res.json();
                 setBillingData(data);
@@ -80,55 +82,59 @@ const HotelBills = () => {
     const triggerUpiPayment = () => {
         if (!billingData?.storeUpiId || !paymentAmount) return false;
         
-        // Construct standard UPI URL
-        // pa: payee address, pn: payee name, am: amount, cu: currency
-        const upiUrl = `upi://pay?pa=${billingData.storeUpiId}&pn=${encodeURIComponent(billingData.storeName || 'Store')}&am=${paymentAmount}&cu=INR`;
+        const upiUrl = `upi://pay?pa=${billingData.storeUpiId}&pn=${encodeURIComponent(billingData.storeName || 'Store')}&am=${paymentAmount}&cu=INR&tn=Martbridge Payment`;
         
         console.log("🔗 Opening UPI:", upiUrl);
         window.location.href = upiUrl;
+        setPaymentStep(2); // Move to UTR step
         return true;
     };
 
-    const handleRecordPayment = async (e) => {
+    const handlePayClick = (bill) => {
+        setActiveBill(bill);
+        setPaymentAmount(bill.pendingAmount || bill.totalAmount);
+        setPaymentStep(1);
+        // Scroll to payment form
+        document.querySelector('.payment-form')?.scrollIntoView({ behavior: 'smooth' });
+    };
+
+    const handleSubmitPayment = async (e) => {
         e.preventDefault();
         
         if (!paymentAmount || Number(paymentAmount) <= 0) {
             return showAlert('Please enter a valid amount', 'Invalid Amount');
         }
-
-        if (!billingData?.storeUpiId) {
-            const proceed = await showConfirm("The store owner hasn't shared their UPI ID yet. You can still record this payment manually if you paid via another method. Proceed?", "UPI ID Missing");
-            if (!proceed) return;
+        if (!utrNumber) {
+            return showAlert('Please enter the UTR number from your payment app', 'UTR Missing');
         }
-
-        const confirm = await showConfirm(`Record payment of ₹${paymentAmount}? This will also try to open your UPI app.`, 'Confirm Payment');
-        if (!confirm) return;
-
-        // 🚀 Trigger UPI App Open
-        triggerUpiPayment();
+        if (!activeBill) {
+            return showAlert('Please select a bill to pay from the history below', 'No Bill Selected');
+        }
 
         setPaymentSubmitting(true);
         try {
-            const res = await fetch(`http://localhost:5000/api/payments/initiate`, {
+            const res = await fetch(`https://powerful-solace-production-4309.up.railway.app/api/bills/${activeBill._id}/payment`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    hotelId,
-                    storeId: storeInfo.id,
-                    storeType: storeInfo.type,
-                    amount: Number(paymentAmount)
+                    amount: Number(paymentAmount),
+                    utrNumber: utrNumber
                 })
             });
 
             const result = await res.json();
 
             if (res.ok) {
-                showAlert('Payment recorded! Pending store confirmation.', 'Success');
+                showAlert('Payment submitted! Pending store approval.', 'Success');
                 setPaymentAmount('');
+                setUtrNumber('');
+                setPaymentStep(1);
+                setActiveBill(null);
                 // Refresh data
+                fetchBills();
                 fetchBillingData(storeInfo.id);
             } else {
-                showAlert(result.error || 'Failed to record payment', 'Error');
+                showAlert(result.error || 'Failed to submit payment', 'Error');
             }
         } catch (err) {
             console.error(err);
@@ -187,26 +193,54 @@ const HotelBills = () => {
                         )}
                         
                         <div className="payment-form">
-                            <h3>Record a Payment</h3>
-                            <p>Paid via UPI? Add the record below to update your balance.</p>
-                            <form onSubmit={handleRecordPayment} className="form-payload">
-                                <input 
-                                    type="number" 
-                                    placeholder="Enter Amount paid (₹)" 
-                                    value={paymentAmount}
-                                    onChange={(e) => setPaymentAmount(e.target.value)}
-                                    required 
-                                />
-                                <button type="submit" disabled={paymentSubmitting || !storeInfo.id}>
-                                    {paymentSubmitting ? 'Recording...' : 'Record Payment'}
-                                </button>
-                            </form>
+                            <h3>{activeBill ? `Pay for Bill (${activeBill.date})` : 'Select a bill to pay'}</h3>
+                            {activeBill ? (
+                                <>
+                                    <p>Current Pending: <b>₹{activeBill.pendingAmount ?? activeBill.totalAmount}</b></p>
+                                    
+                                    {paymentStep === 1 ? (
+                                        <form onSubmit={(e) => { e.preventDefault(); triggerUpiPayment(); }} className="form-payload">
+                                            <input 
+                                                type="number" 
+                                                placeholder="Amount to pay (₹)" 
+                                                value={paymentAmount}
+                                                onChange={(e) => setPaymentAmount(e.target.value)}
+                                                required 
+                                            />
+                                            <button type="submit" className="upi-btn" disabled={!billingData?.storeUpiId}>
+                                                📱 Pay via UPI
+                                            </button>
+                                            <button type="button" className="cancel-btn" onClick={() => setActiveBill(null)}>Cancel</button>
+                                        </form>
+                                    ) : (
+                                        <form onSubmit={handleSubmitPayment} className="form-payload">
+                                            <div className="utr-notice">
+                                                ✅ UPI App opened for ₹{paymentAmount}. <br/>
+                                                Enter the 12-digit UTR/Transaction ID below:
+                                            </div>
+                                            <input 
+                                                type="text" 
+                                                placeholder="Enter 12-digit UTR Number" 
+                                                value={utrNumber}
+                                                onChange={(e) => setUtrNumber(e.target.value)}
+                                                required 
+                                            />
+                                            <button type="submit" disabled={paymentSubmitting}>
+                                                {paymentSubmitting ? 'Submitting...' : 'Confirm Submission'}
+                                            </button>
+                                            <button type="button" className="back-btn-small" onClick={() => setPaymentStep(1)}>← Change Amount</button>
+                                        </form>
+                                    )}
+                                </>
+                            ) : (
+                                <p className="info-text">Please click the <b>"Pay"</b> button next to any pending bill in the table below to start a payment.</p>
+                            )}
                             {!storeInfo.id && <p className="error-small">⚠️ Only linked hotels can record payments.</p>}
                         </div>
                     </div>
 
                     <div className="card mt-20">
-                        <h3>Order History</h3>
+                        <h3>Order History & Payments</h3>
                         {bills.length === 0 ? (
                             <p>No bills found.</p>
                         ) : (
@@ -215,25 +249,53 @@ const HotelBills = () => {
                                     <thead>
                                         <tr>
                                             <th>Date</th>
-                                            <th>Store</th>
-                                            <th>Type</th>
-                                            <th>Amount (₹)</th>
+                                            <th>Total (₹)</th>
+                                            <th>Pending (₹)</th>
                                             <th>Status</th>
+                                            <th>Action</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {bills.map((bill) => (
-                                            <tr key={bill._id}>
-                                                <td>{new Date(bill.createdAt).toLocaleDateString()}</td>
-                                                <td>{bill.storeName}</td>
-                                                <td>{bill.storeType}</td>
-                                                <td><b>₹ {bill.totalAmount}</b></td>
-                                                <td>
-                                                    <span className={`status ${bill.status}`}>
-                                                        {bill.status}
-                                                    </span>
-                                                </td>
-                                            </tr>
+                                            <React.Fragment key={bill._id}>
+                                                <tr className={activeBill?._id === bill._id ? 'active-row' : ''}>
+                                                    <td>{bill.date}</td>
+                                                    <td><b>₹{bill.totalAmount}</b></td>
+                                                    <td className={bill.pendingAmount > 0 ? 'text-danger' : 'text-success'}>
+                                                        ₹{bill.pendingAmount ?? bill.totalAmount}
+                                                    </td>
+                                                    <td>
+                                                        <span className={`status ${bill.status}`}>
+                                                            {bill.status}
+                                                        </span>
+                                                    </td>
+                                                    <td>
+                                                        {(bill.pendingAmount > 0 || bill.status === 'pending') && (
+                                                            <button 
+                                                                className="pay-btn-row" 
+                                                                onClick={() => handlePayClick(bill)}
+                                                            >
+                                                                Pay
+                                                            </button>
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                                {bill.payments && bill.payments.length > 0 && (
+                                                    <tr className="history-row">
+                                                        <td colSpan="5">
+                                                            <div className="payment-history-mini">
+                                                                {bill.payments.map((p, idx) => (
+                                                                    <div key={idx} className="payment-chip">
+                                                                        <span>₹{p.amount}</span>
+                                                                        <span className="utr">UTR: {p.utrNumber}</span>
+                                                                        <span className={`badge ${p.status}`}>{p.status}</span>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                )}
+                                            </React.Fragment>
                                         ))}
                                     </tbody>
                                 </table>
@@ -288,9 +350,26 @@ const HotelBills = () => {
                 table { width: 100%; border-collapse: collapse; background: white; border-radius: 16px; overflow: hidden; }
                 th, td { padding: 16px; text-align: left; border-bottom: 1px solid #eee; }
                 th { background: var(--primary-color); color: white; }
-                .status { padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; text-transform: uppercase; }
-                .status.pending { background: #fff3cd; color: #856404; }
-                .status.paid { background: #d4edda; color: #155724; }
+                .pay-btn-row { background: #0bb15d; color: white; border: none; padding: 6px 14px; border-radius: 8px; font-weight: 700; cursor: pointer; transition: 0.2s; }
+                .pay-btn-row:hover { background: #09944d; transform: scale(1.05); }
+                .active-row { background: #e8f5e9 !important; }
+                .text-danger { color: #dc3545; font-weight: 700; }
+                .text-success { color: #0bb15d; font-weight: 700; }
+                
+                .info-text { color: #666; font-style: italic; }
+                .utr-notice { background: #e7f3ff; color: #004085; padding: 12px; border-radius: 10px; border-left: 4px solid #007bff; margin-bottom: 15px; font-size: 14px; line-height: 1.5; }
+                .cancel-btn { background: #eee; border: none; color: #666; padding: 14px; border-radius: 12px; cursor: pointer; }
+                .back-btn-small { background: none; border: none; color: #007bff; cursor: pointer; font-size: 13px; font-weight: 600; text-decoration: underline; margin-top: 10px; }
+                
+                .history-row { background: #fafafa; }
+                .payment-history-mini { display: flex; flex-wrap: wrap; gap: 8px; padding: 5px 10px 15px; border-top: 1px dashed #eee; }
+                .payment-chip { display: flex; align-items: center; gap: 10px; background: white; border: 1px solid #eee; padding: 4px 12px; border-radius: 50px; font-size: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.03); }
+                .payment-chip b { color: #333; }
+                .payment-chip .utr { color: #888; border-left: 1px solid #ddd; padding-left: 10px; }
+                .badge { padding: 2px 8px; border-radius: 10px; font-weight: 800; text-transform: uppercase; font-size: 10px; }
+                .badge.pending { background: #fff3cd; color: #856404; }
+                .badge.confirmed { background: #d4edda; color: #155724; }
+                .badge.rejected { background: #f8d7da; color: #721c24; }
 
                 @media (max-width: 768px) {
                     .billing-widget { grid-template-columns: 1fr; }

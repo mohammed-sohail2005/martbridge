@@ -69,7 +69,7 @@ const HotelRegister = () => {
         };
 
         try {
-            const res = await fetch('http://localhost:5000/api/hotel/register', {
+            const res = await fetch('https://powerful-solace-production-4309.up.railway.app/api/hotel/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)

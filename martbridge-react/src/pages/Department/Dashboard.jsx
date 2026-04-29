@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { usePopup } from '../../context/PopupContext';
+import { API_BASE_URL } from '../../apiConfig';
 
 const DepartmentDashboard = () => {
     const navigate = useNavigate();
@@ -12,6 +13,7 @@ const DepartmentDashboard = () => {
         storeName: 'Loading...',
         profileImage: 'profile.jpg'
     });
+    const [labors, setLabors] = useState([]);
     const [showProfilePopup, setShowProfilePopup] = useState(false);
     const [showInvitePopup, setShowInvitePopup] = useState(false);
     const [showLinkPopup, setShowLinkPopup] = useState(false);
@@ -22,18 +24,23 @@ const DepartmentDashboard = () => {
     const [linkedHotels, setLinkedHotels] = useState([]);
     const [ordersLoading, setOrdersLoading] = useState(false);
     const [hotelsLoading, setHotelsLoading] = useState(false);
+    const [products, setProducts] = useState([]);
+    const [showInventoryPopup, setShowInventoryPopup] = useState(false);
+
 
     useEffect(() => {
         if (deptId) {
             fetchStoreData();
             fetchIncomingOrders();
             fetchLinkedHotels();
+            fetchProducts();
+            fetchLabors();
         }
     }, [deptId]);
 
     const fetchStoreData = async () => {
         try {
-            const res = await fetch(`http://localhost:5000/api/department/${deptId}`);
+            const res = await fetch(`${API_BASE_URL}/api/department/${deptId}`);
             const data = await res.json();
             setStoreData(data);
         } catch (err) {
@@ -42,11 +49,23 @@ const DepartmentDashboard = () => {
         }
     };
 
+    const fetchLabors = async () => {
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/labor/owner/${deptId}`);
+            const data = await res.json();
+            setLabors(data);
+        } catch (err) {
+            console.error("Labor fetch error:", err);
+        }
+    };
+
+
+
     const fetchIncomingOrders = async () => {
         setOrdersLoading(true);
         try {
             const today = new Date().toISOString().split('T')[0];
-            const res = await fetch(`http://localhost:5000/api/store/incoming-orders/${deptId}?date=${today}`);
+            const res = await fetch(`${API_BASE_URL}/api/store/incoming-orders/${deptId}?date=${today}`);
             const data = await res.json();
             setIncomingOrders(data);
         } catch (err) {
@@ -59,13 +78,43 @@ const DepartmentDashboard = () => {
     const fetchLinkedHotels = async () => {
         setHotelsLoading(true);
         try {
-            const res = await fetch(`http://localhost:5000/api/store/linked-hotels/${deptId}`);
+            const res = await fetch(`${API_BASE_URL}/api/store/linked-hotels/${deptId}`);
             const data = await res.json();
             setLinkedHotels(data);
         } catch (err) {
             console.error("Hotels fetch error:", err);
         } finally {
             setHotelsLoading(false);
+        }
+    };
+
+    const fetchProducts = async () => {
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/product/store/${deptId}`);
+            const data = await res.json();
+            setProducts(data);
+        } catch (err) {
+            console.error("Products fetch error:", err);
+        }
+    };
+
+    const handleUpdateStock = async (prodId, newStock, newUnit) => {
+        setUpdatingStockId(prodId);
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/product/update-stock/${prodId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ stock: newStock, unit: newUnit })
+            });
+            if (res.ok) {
+                fetchProducts();
+            } else {
+                showAlert('Failed to update inventory', 'Error');
+            }
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setUpdatingStockId(null);
         }
     };
 
@@ -85,7 +134,7 @@ const DepartmentDashboard = () => {
 
         setInviteLoading(true);
         try {
-            const res = await fetch(`http://localhost:5000/api/store/invite-hotel`, {
+            const res = await fetch(`${API_BASE_URL}/api/store/invite-hotel`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ hotelName: inviteHotelName, storeId: deptId, storeType: "department" })
@@ -108,6 +157,8 @@ const DepartmentDashboard = () => {
             setInviteLoading(false);
         }
     };
+
+    const totalMonthlySalary = labors.reduce((sum, l) => sum + l.salary, 0);
 
     return (
         <div className="dashboard-page">
@@ -170,6 +221,51 @@ const DepartmentDashboard = () => {
                 </div>
             )}
 
+            {showInventoryPopup && (
+                <div className="overlay-blur" style={{ zIndex: 10002 }} onClick={() => setShowInventoryPopup(false)}>
+                    <div className="inventory-modal" onClick={e => e.stopPropagation()}>
+                        <h2>📦 Inventory Management</h2>
+                        <p>Update stock levels and units.</p>
+                        
+                        <div className="inventory-list">
+                            {products.length === 0 ? <p>No products found. Add some in "Set Prices".</p> : 
+                                products.map(p => (
+                                    <div key={p._id} className="inventory-row">
+                                        <div className="prod-meta">
+                                            <span className="prod-name">{p.name}</span>
+                                        </div>
+                                        <div className="prod-inputs">
+                                            <div className="input-box">
+                                                <label>Stock</label>
+                                                <input 
+                                                    type="number" 
+                                                    defaultValue={p.stock} 
+                                                    onBlur={(e) => handleUpdateStock(p._id, parseFloat(e.target.value), p.unit)} 
+                                                    disabled={updatingStockId === p._id}
+                                                />
+                                            </div>
+                                            <div className="input-box">
+                                                <label>Unit</label>
+                                                <input 
+                                                    type="text" 
+                                                    defaultValue={p.unit || 'kg'} 
+                                                    onBlur={(e) => handleUpdateStock(p._id, p.stock, e.target.value)} 
+                                                    disabled={updatingStockId === p._id}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))
+                            }
+                        </div>
+                        <span className="close-btn" onClick={() => setShowInventoryPopup(false)}>✕</span>
+                        <button className="done-btn" onClick={() => setShowInventoryPopup(false)}>Done</button>
+                    </div>
+                </div>
+            )}
+
+
+
             <div className="center-content">
                 <h1>DEPARTMENT STORE</h1>
                 <h2>{storeData.storeName}</h2>
@@ -186,6 +282,13 @@ const DepartmentDashboard = () => {
                     <h3>📥 Incoming Orders ({incomingOrders.length})</h3>
                     <p>Orders from connected hotels</p>
                 </div>
+                
+                <div className="dash-card labor-card" onClick={() => navigate('/department/labor')}>
+                    <h3>👷 Labor Card</h3>
+                    <p>{labors.length} Workers</p>
+                    <div className="summary-val">₹{totalMonthlySalary}</div>
+                </div>
+
                 <div className="dash-card" onClick={() => navigate('/department/hotels')}>
                     <h3>🏨 Connected Hotels ({linkedHotels.length})</h3>
                     <p>View all hotels linked to your store</p>
@@ -193,6 +296,10 @@ const DepartmentDashboard = () => {
                 <div className="dash-card" onClick={() => navigate('/department/payments')}>
                     <h3>💳 View Payments</h3>
                     <p>Confirm incoming payments</p>
+                </div>
+                <div className="dash-card inventory-card" onClick={() => setShowInventoryPopup(true)}>
+                    <h3>📦 Inventory & Stock</h3>
+                    <p>Track {products.length} stocked items</p>
                 </div>
             </div>
 
@@ -223,11 +330,30 @@ const DepartmentDashboard = () => {
                 .dash-card { background: rgba(255, 255, 255, 0.12); backdrop-filter: blur(14px); border-radius: 22px; padding: 28px; min-height: 160px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; cursor: pointer; transition: .3s; border: 1px solid rgba(255, 255, 255, 0.1); }
                 .dash-card:hover { transform: translateY(-6px) scale(1.02); background: rgba(11, 177, 93, 0.25); }
 
+                .labor-card { border: 1px solid rgba(255, 193, 7, 0.4); }
+                .labor-card .summary-val { margin-top: 10px; font-weight: 800; color: #ffc107; font-size: 20px; }
+
                 .input-group { position: relative; margin-bottom: 20px; text-align: left; }
                 .input-group input { width: 100%; padding: 12px 15px; border: 2px solid #e0e0e0; border-radius: 12px; outline: none; font-size: 15px; background: #f9f9f9; }
                 .input-group label { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #888; transition: 0.3s; pointer-events: none; font-size: 14px; }
                 .input-group input:focus + label, .input-group input:not(:placeholder-shown) + label { top: 0; font-size: 12px; color: #00b050; background: white; font-weight: 600; }
                 .invite-btn { width: 100%; padding: 14px; border: none; border-radius: 30px; background: linear-gradient(135deg, #00b050, #008a3e); color: white; font-size: 16px; font-weight: 700; cursor: pointer; }
+
+
+
+                .inventory-modal { background: white; width: 450px; border-radius: 25px; padding: 30px; position: relative; color: #222; text-align: center; }
+                .inventory-list { margin-top: 20px; max-height: 400px; overflow-y: auto; padding-right: 10px; }
+                .inventory-row { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid #eee; }
+                .prod-meta { text-align: left; }
+                .prod-name { display: block; font-weight: 700; color: #333; }
+                .warning-tag { font-size: 10px; background: #ffebeb; color: #ff4d4d; padding: 2px 6px; border-radius: 4px; font-weight: 800; }
+                .prod-inputs { display: flex; gap: 10px; }
+                .input-box { display: flex; flex-direction: column; align-items: center; }
+                .input-box label { font-size: 10px; font-weight: 800; color: #888; margin-bottom: 2px; }
+                .input-box input { width: 60px; padding: 8px; border: 1px solid #ddd; border-radius: 8px; text-align: center; font-weight: 700; }
+                .done-btn { margin-top: 25px; width: 100%; padding: 12px; background: #333; color: white; border: none; border-radius: 12px; cursor: pointer; font-weight: 700; }
+
+                .inventory-card { position: relative; }
 
                 @media (max-width: 768px) {
                     .center-content h1 { font-size: 28px; }

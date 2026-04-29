@@ -41,6 +41,8 @@ import HotelPlaceOrder from './pages/Hotel/PlaceOrder';
 // Admin Pages
 import AdminDashboard from './pages/Admin/Dashboard';
 
+import LaborManagement from './pages/LaborManagement';
+
 function App() {
   return (
     <PopupProvider>
@@ -57,6 +59,7 @@ function App() {
           <Route path="/vegetable/payments" element={<StorePayments />} />
           <Route path="/vegetable/orders" element={<StoreIncomingOrders />} />
           <Route path="/vegetable/profile" element={<VegetableProfileUpdate />} />
+          <Route path="/vegetable/labor" element={<LaborManagement />} />
 
           {/* Meat Routes */}
           <Route path="/meat/register" element={<MeatRegister />} />
@@ -67,6 +70,7 @@ function App() {
           <Route path="/meat/payments" element={<StorePayments />} />
           <Route path="/meat/orders" element={<StoreIncomingOrders />} />
           <Route path="/meat/profile" element={<MeatProfileUpdate />} />
+          <Route path="/meat/labor" element={<LaborManagement />} />
 
           {/* Department Routes */}
           <Route path="/department/register" element={<DepartmentRegister />} />
@@ -78,6 +82,7 @@ function App() {
           <Route path="/department/orders" element={<StoreIncomingOrders />} />
           <Route path="/department/profile" element={<DepartmentProfileUpdate />} />
           <Route path="/department/create-hotel" element={<DepartmentCreateHotel />} />
+          <Route path="/department/labor" element={<LaborManagement />} />
           
           {/* Hotel Routes */}
           <Route path="/hotel/login" element={<HotelLogin />} />
@@ -86,6 +91,7 @@ function App() {
           <Route path="/hotel/profile" element={<HotelProfileUpdate />} />
           <Route path="/hotel/bills" element={<HotelBills />} />
           <Route path="/hotel/place-order" element={<HotelPlaceOrder />} />
+          <Route path="/hotel/labor" element={<LaborManagement />} />
 
           {/* Admin Routes */}
           <Route path="/admin" element={<AdminDashboard />} />

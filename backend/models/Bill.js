@@ -31,6 +31,9 @@ const billSchema = new mongoose.Schema({
     morningStatus: { type: String, enum: ["draft", "sent"], default: "draft" },
     eveningStatus: { type: String, enum: ["draft", "sent"], default: "draft" },
     extraStatus: { type: String, enum: ["draft", "sent"], default: "draft" },
+    morningStockProcessed: { type: Boolean, default: false },
+    eveningStockProcessed: { type: Boolean, default: false },
+    extraStockProcessed: { type: Boolean, default: false },
     totalAmount: {
         type: Number,
         default: 0
@@ -39,7 +42,18 @@ const billSchema = new mongoose.Schema({
         type: String,
         enum: ["pending", "paid"],
         default: "pending"
-    }
+    },
+    pendingAmount: {
+        type: Number,
+        default: 0
+    },
+    payments: [{
+        amount: Number,
+        utrNumber: String,
+        status: { type: String, enum: ['pending', 'confirmed', 'rejected'], default: 'pending' },
+        paidAt: { type: Date, default: Date.now },
+        confirmedAt: Date
+    }]
 }, { timestamps: true });
 
 // Compound index to ensure one bill per hotel per date

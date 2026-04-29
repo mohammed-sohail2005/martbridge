@@ -19,7 +19,7 @@ const MeatProfileUpdate = () => {
 
     useEffect(() => {
         if (meatId) {
-            fetch(`http://localhost:5000/api/meat/${meatId}`)
+            fetch(`https://powerful-solace-production-4309.up.railway.app/api/meat/${meatId}`)
                 .then(res => res.json())
                 .then(data => {
                     setFormData({
@@ -62,7 +62,7 @@ const MeatProfileUpdate = () => {
         if (profileImage) data.append('profileImage', profileImage);
 
         try {
-            const res = await fetch(`http://localhost:5000/api/meat/update/${meatId}`, {
+            const res = await fetch(`https://powerful-solace-production-4309.up.railway.app/api/meat/update/${meatId}`, {
                 method: 'PUT',
                 body: data
             });

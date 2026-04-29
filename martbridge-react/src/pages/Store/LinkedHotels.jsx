@@ -32,7 +32,7 @@ const LinkedHotels = () => {
     const fetchLinkedHotels = async () => {
         setLoading(true);
         try {
-            const res = await fetch(`http://localhost:5000/api/store/linked-hotels/${storeId}`);
+            const res = await fetch(`https://powerful-solace-production-4309.up.railway.app/api/store/linked-hotels/${storeId}`);
             const data = await res.json();
             setHotels(data);
         } catch (err) {

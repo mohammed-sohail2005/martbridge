@@ -1,0 +1,328 @@
+.labor-mgmt-page {
+    min-height: 100vh;
+    background: #0f172a;
+    color: #e2e8f0;
+    padding: 30px;
+    font-family: 'Inter', sans-serif;
+}
+
+.back-btn {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background 0.3s ease;
+    margin-bottom: 20px;
+}
+
+.back-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.labor-mgmt-container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.labor-header {
+    margin-bottom: 40px;
+}
+
+.labor-header h1 {
+    font-size: 2.5rem;
+    color: #f8fafc;
+    margin-bottom: 10px;
+}
+
+.labor-header p {
+    color: #94a3b8;
+    font-size: 1.1rem;
+}
+
+.labor-content {
+    display: grid;
+    grid-template-columns: 350px 1fr;
+    gap: 30px;
+}
+
+.add-labor-section {
+    background: rgba(30, 41, 59, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+    padding: 24px;
+    height: fit-content;
+}
+
+.add-labor-section h2 {
+    font-size: 1.25rem;
+    margin-bottom: 20px;
+    color: #f8fafc;
+}
+
+.labor-form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.labor-form input,
+.labor-form select {
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(15, 23, 42, 0.6);
+    color: #fff;
+    font-size: 1rem;
+}
+
+.labor-form input:focus,
+.labor-form select:focus {
+    outline: none;
+    border-color: #10b981;
+}
+
+.primary-btn {
+    background: #10b981;
+    color: white;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background 0.3s;
+    margin-top: 10px;
+}
+
+.primary-btn:hover {
+    background: #059669;
+}
+
+.primary-btn:disabled {
+    background: #64748b;
+    cursor: not-allowed;
+}
+
+.list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.list-header h2 {
+    font-size: 1.5rem;
+    color: #f8fafc;
+}
+
+.total-badge {
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.2);
+    padding: 8px 16px;
+    border-radius: 20px;
+    color: #34d399;
+    font-weight: 500;
+}
+
+.total-badge span {
+    font-weight: 700;
+    font-size: 1.1rem;
+}
+
+.empty-state {
+    background: rgba(30, 41, 59, 0.4);
+    border: 1px dashed rgba(148, 163, 184, 0.3);
+    border-radius: 12px;
+    padding: 40px;
+    text-align: center;
+    color: #94a3b8;
+}
+
+.category-group {
+    margin-bottom: 30px;
+}
+
+.category-group h3 {
+    font-size: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #94a3b8;
+    margin-bottom: 15px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 8px;
+}
+
+.labor-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.labor-card-full {
+    background: rgba(30, 41, 59, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 20px;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.labor-card-full:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+.labor-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 15px;
+}
+
+.labor-info h4 {
+    font-size: 1.1rem;
+    color: #f8fafc;
+    margin: 0 0 5px 0;
+}
+
+.salary {
+    color: #10b981;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.labor-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.icon-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: none;
+    border-radius: 6px;
+    padding: 6px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.icon-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.icon-btn.delete:hover {
+    background: rgba(239, 68, 68, 0.2);
+}
+
+.labor-card-footer {
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding-top: 15px;
+}
+
+.upi-section {
+    display: flex;
+    align-items: center;
+}
+
+.upload-qr-btn {
+    display: block;
+    width: 100%;
+    text-align: center;
+    background: rgba(59, 130, 246, 0.1);
+    color: #60a5fa;
+    border: 1px dashed rgba(59, 130, 246, 0.3);
+    padding: 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.3s;
+}
+
+.upload-qr-btn:hover {
+    background: rgba(59, 130, 246, 0.2);
+    border-color: rgba(59, 130, 246, 0.5);
+}
+
+.upi-ready {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+}
+
+.pay-btn {
+    flex: 1;
+    background: #3b82f6;
+    color: white;
+    text-align: center;
+    text-decoration: none;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: background 0.3s;
+}
+
+.pay-btn:hover {
+    background: #2563eb;
+}
+
+.reupload-btn {
+    background: rgba(255, 255, 255, 0.1);
+    color: #cbd5e1;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.reupload-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.edit-labor-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.edit-labor-form input {
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(15, 23, 42, 0.8);
+    color: white;
+}
+
+.edit-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 5px;
+}
+
+.save-btn {
+    flex: 1;
+    background: #10b981;
+    color: white;
+    border: none;
+    padding: 8px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.cancel-btn {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    border: none;
+    padding: 8px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+@media (max-width: 900px) {
+    .labor-content {
+        grid-template-columns: 1fr;
+    }
+}
