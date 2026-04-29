@@ -1,9 +1,24 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 
 const MainDashboard = () => {
     const navigate = useNavigate();
+
+    useEffect(() => {
+        // Persistent Login Logic: Check for stored IDs and redirect
+        const adminId = localStorage.getItem('adminId');
+        const deptId = localStorage.getItem('deptId');
+        const vegId = localStorage.getItem('vegId');
+        const meatId = localStorage.getItem('meatId');
+        const hotelId = localStorage.getItem('hotelId');
+
+        if (adminId) navigate('/admin');
+        else if (deptId) navigate('/department/dashboard');
+        else if (vegId) navigate('/vegetable/dashboard');
+        else if (meatId) navigate('/meat/dashboard');
+        else if (hotelId) navigate('/hotel/dashboard');
+    }, [navigate]);
 
     const roles = [
         {
