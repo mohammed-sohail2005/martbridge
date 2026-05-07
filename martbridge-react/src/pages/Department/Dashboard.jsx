@@ -46,7 +46,7 @@ const DepartmentDashboard = () => {
             setStoreData(data);
         } catch (err) {
             console.error(err);
-            showAlert('Server error while loading dashboard', 'Error');
+            showAlert(`Server error while loading dashboard: ${err.message}`, 'Error');
         }
     };
 
