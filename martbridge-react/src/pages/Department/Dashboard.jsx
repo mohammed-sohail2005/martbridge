@@ -18,6 +18,7 @@ const DepartmentDashboard = () => {
     const [showInvitePopup, setShowInvitePopup] = useState(false);
     const [showLinkPopup, setShowLinkPopup] = useState(false);
     const [inviteHotelName, setInviteHotelName] = useState('');
+    const [inviteHotelPhone, setInviteHotelPhone] = useState('');
     const [generatedLink, setGeneratedLink] = useState('');
     const [inviteLoading, setInviteLoading] = useState(false);
     const [incomingOrders, setIncomingOrders] = useState([]);
@@ -127,8 +128,8 @@ const DepartmentDashboard = () => {
     };
 
     const handleSendInvite = async () => {
-        if (!inviteHotelName) {
-            showAlert('Please enter hotel name', 'Missing Info');
+        if (!inviteHotelName || !inviteHotelPhone) {
+            showAlert('Please enter hotel name and phone number', 'Missing Info');
             return;
         }
 
@@ -137,18 +138,24 @@ const DepartmentDashboard = () => {
             const res = await fetch(`${API_BASE_URL}/api/store/invite-hotel`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ hotelName: inviteHotelName, storeId: deptId, storeType: "department" })
+                body: JSON.stringify({ hotelName: inviteHotelName, hotelPhone: inviteHotelPhone, storeId: deptId, storeType: "department" })
             });
 
+            const data = await res.json();
+
             if (res.ok) {
-                const baseUrl = window.location.origin;
-                const link = `${baseUrl}/hotel/register?storeId=${deptId}&storeType=department&hotelName=${encodeURIComponent(inviteHotelName)}`;
-                setGeneratedLink(link);
-                setShowInvitePopup(false);
-                setShowLinkPopup(true);
+                if (data.isRequest) {
+                    showAlert(data.message, 'Request Sent');
+                    setShowInvitePopup(false);
+                } else {
+                    setGeneratedLink(data.link);
+                    setShowInvitePopup(false);
+                    setShowLinkPopup(true);
+                }
                 setInviteHotelName('');
+                setInviteHotelPhone('');
             } else {
-                showAlert('Failed to generate invite', 'Error');
+                showAlert(data.message || 'Failed to generate invite', 'Error');
             }
         } catch (err) {
             console.error(err);
@@ -193,6 +200,10 @@ const DepartmentDashboard = () => {
                         <div className="input-group">
                             <input type="text" value={inviteHotelName} onChange={e => setInviteHotelName(e.target.value)} placeholder=" " required />
                             <label>Hotel Name</label>
+                        </div>
+                        <div className="input-group">
+                            <input type="text" value={inviteHotelPhone} onChange={e => setInviteHotelPhone(e.target.value)} placeholder=" " required />
+                            <label>Phone Number</label>
                         </div>
                         <button className="invite-btn" onClick={handleSendInvite} disabled={inviteLoading}>
                             {inviteLoading ? 'Sending...' : 'Send Invitation 🚀'}

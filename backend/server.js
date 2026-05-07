@@ -11,7 +11,7 @@ const upload = multer({ storage: storage });
 
 // 🌍 Fix for Mobile Hotspot DNS Issues
 try {
-  dns.setServers(["8.8.8.8", "8.8.4.4"]);
+  // dns.setServers(["8.8.8.8", "8.8.4.4"]);
   console.log("✅ DNS servers set to Google DNS (8.8.8.8)");
 } catch (e) {
   console.log("⚠️ Could not set DNS servers:", e.message);
@@ -402,13 +402,51 @@ async function resolveStoreName(hotel) {
 // ✅ Generic Invite Hotel (works for Department, Meat, Vegetable)
 app.post("/api/store/invite-hotel", async (req, res) => {
   try {
-    const { hotelName, storeId, storeType } = req.body;
+    const { hotelName, hotelPhone, storeId, storeType } = req.body;
 
     const Model = getStoreModel(storeType);
     const store = await Model.findById(storeId);
     if (!store) return res.status(404).json({ message: "Store not found" });
 
-    const registrationLink = `http://localhost:5173/hotel/register?storeId=${storeId}&storeType=${storeType}&hotelName=${encodeURIComponent(hotelName)}`;
+    // Check if hotel with this phone already exists
+    if (hotelPhone) {
+      const existingHotel = await Hotel.findOne({ phone: hotelPhone });
+      if (existingHotel) {
+        // Check if already linked
+        if (
+          (storeType === "department" && existingHotel.departmentStoreId?.toString() === storeId) ||
+          (storeType === "meat" && existingHotel.meatStoreId?.toString() === storeId) ||
+          (storeType === "vegetable" && existingHotel.vegetableStoreId?.toString() === storeId) ||
+          (existingHotel.linkedStoreId?.toString() === storeId)
+        ) {
+          return res.status(400).json({ message: "Hotel is already linked to this store" });
+        }
+
+        // Check if request already pending
+        const alreadyPending = existingHotel.pendingRequests.some(
+          req => req.storeId.toString() === storeId
+        );
+        if (alreadyPending) {
+          return res.status(400).json({ message: "Link request already sent to this hotel" });
+        }
+
+        // Push pending request
+        existingHotel.pendingRequests.push({
+          storeId,
+          storeType,
+          storeName: store.storeName,
+          status: "pending"
+        });
+        await existingHotel.save();
+
+        return res.json({
+          message: "Hotel already registered. A link request has been sent to their dashboard.",
+          isRequest: true
+        });
+      }
+    }
+
+    const registrationLink = `http://localhost:5173/hotel/register?storeId=${storeId}&storeType=${storeType}&hotelName=${encodeURIComponent(hotelName)}&hotelPhone=${encodeURIComponent(hotelPhone || "")}`;
 
     console.log(`📧 [MOCK INVITE] generated for Hotel: ${hotelName}`);
     console.log(`Store: ${store.storeName} (${storeType})`);
@@ -473,6 +511,10 @@ app.post("/api/hotel/register", async (req, res) => {
       storeType: type
     });
 
+    if (type === "department") newHotel.departmentStoreId = linkedStoreId;
+    if (type === "meat") newHotel.meatStoreId = linkedStoreId;
+    if (type === "vegetable") newHotel.vegetableStoreId = linkedStoreId;
+
     await newHotel.save();
 
     res.status(201).json({
@@ -483,6 +525,34 @@ app.post("/api/hotel/register", async (req, res) => {
 
   } catch (err) {
     console.error("HOTEL REGISTER ERROR:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ✅ Accept Link Request
+app.post("/api/hotel/accept-link/:hotelId", async (req, res) => {
+  try {
+    const { storeId, action } = req.body; // action: "accepted" or "rejected"
+    const hotel = await Hotel.findById(req.params.hotelId);
+    if (!hotel) return res.status(404).json({ message: "Hotel not found" });
+
+    const requestIndex = hotel.pendingRequests.findIndex(r => r.storeId.toString() === storeId);
+    if (requestIndex === -1) return res.status(404).json({ message: "Request not found" });
+
+    const request = hotel.pendingRequests[requestIndex];
+
+    if (action === "accepted") {
+      if (request.storeType === "department") hotel.departmentStoreId = request.storeId;
+      if (request.storeType === "meat") hotel.meatStoreId = request.storeId;
+      if (request.storeType === "vegetable") hotel.vegetableStoreId = request.storeId;
+    }
+
+    // Remove the request
+    hotel.pendingRequests.splice(requestIndex, 1);
+    await hotel.save();
+
+    res.json({ message: `Request ${action} successfully`, hotel });
+  } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
@@ -542,7 +612,15 @@ app.put("/api/hotel/update/:id", upload.single('profileImage'), async (req, res)
 // ✅ Get Hotels by Store (for any store type)
 app.get("/api/hotel/by-store/:storeId", async (req, res) => {
   try {
-    const hotels = await Hotel.find({ linkedStoreId: req.params.storeId }).sort({ _id: -1 });
+    const storeId = req.params.storeId;
+    const hotels = await Hotel.find({
+      $or: [
+        { linkedStoreId: storeId },
+        { departmentStoreId: storeId },
+        { meatStoreId: storeId },
+        { vegetableStoreId: storeId }
+      ]
+    }).sort({ _id: -1 });
     res.json(hotels);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -782,7 +860,15 @@ app.get("/api/store/incoming-orders/:storeId", async (req, res) => {
     const { date } = req.query; // e.g., 2026-04-10
     
     // 1. Find all hotels linked to this store
-    const hotels = await Hotel.find({ linkedStoreId: new mongoose.Types.ObjectId(req.params.storeId) });
+    const storeId = req.params.storeId;
+    const hotels = await Hotel.find({
+      $or: [
+        { linkedStoreId: storeId },
+        { departmentStoreId: storeId },
+        { meatStoreId: storeId },
+        { vegetableStoreId: storeId }
+      ]
+    });
     const hotelIds = hotels.map(h => h._id);
 
     // 2. Find bills for these hotels on this date
@@ -1121,5 +1207,30 @@ app.delete("/api/labor/:id", async (req, res) => {
 // ========================
 // Server start (ALWAYS at bottom)
 // ========================
+// =========================
+// LABOR PAYMENT APIs
+// =========================
+app.put("/api/labor/pay/:id", async (req, res) => {
+  try {
+    const { paymentMethod, paymentStatus, paidAmount, lastPaidMonth } = req.body;
+    const updateData = {
+      paymentMethod,
+      paymentStatus,
+      paidAmount,
+      lastPaidMonth,
+      paidDate: new Date()
+    };
+    
+    const labor = await Labor.findByIdAndUpdate(req.params.id, updateData, { new: true });
+    if (!labor) return res.status(404).json({ message: "Labor record not found" });
+    
+    res.json({ message: "Labor payment updated successfully", labor });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+});

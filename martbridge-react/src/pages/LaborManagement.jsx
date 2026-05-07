@@ -39,6 +39,14 @@ const LaborManagement = () => {
     const [editCategory, setEditCategory] = useState('');
     const [isUpdatingLabor, setIsUpdatingLabor] = useState(false);
 
+    // Payment State
+    const [showPaymentModal, setShowPaymentModal] = useState(false);
+    const [paymentLabor, setPaymentLabor] = useState(null);
+    const [paymentMethod, setPaymentMethod] = useState('cash');
+    const [paymentAmount, setPaymentAmount] = useState('');
+    const [paymentMonth, setPaymentMonth] = useState('');
+    const [isSubmittingPayment, setIsSubmittingPayment] = useState(false);
+
     useEffect(() => {
         if (userId) {
             fetchLabors();
@@ -216,7 +224,53 @@ const LaborManagement = () => {
         e.target.value = '';
     };
 
+    const handleOpenPayment = (labor) => {
+        setPaymentLabor(labor);
+        setPaymentAmount(labor.salary.toString());
+        
+        // Default to current month YYYY-MM
+        const now = new Date();
+        const monthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+        setPaymentMonth(monthStr);
+        
+        setShowPaymentModal(true);
+    };
+
+    const handleProcessPayment = async () => {
+        if (!paymentAmount || !paymentMonth) {
+            showAlert('Amount and Month are required', 'Warning');
+            return;
+        }
+
+        setIsSubmittingPayment(true);
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/labor/pay/${paymentLabor._id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    paymentStatus: 'paid',
+                    paymentMethod,
+                    paidAmount: parseFloat(paymentAmount),
+                    lastPaidMonth: paymentMonth
+                })
+            });
+
+            if (res.ok) {
+                setShowPaymentModal(false);
+                fetchLabors();
+                showAlert('Payment recorded successfully', 'Success');
+            } else {
+                showAlert('Failed to record payment', 'Error');
+            }
+        } catch (err) {
+            showAlert('Server error', 'Error');
+        } finally {
+            setIsSubmittingPayment(false);
+        }
+    };
+
     const totalMonthlySalary = labors.reduce((sum, l) => sum + (l.salary || 0), 0);
+    const unpaidLaborsCount = labors.filter(l => l.paymentStatus !== 'paid').length;
 
     const categories = Array.from(new Set(labors.map(l => l.category || 'General')));
     if (categories.length === 0) categories.push('General');
@@ -230,6 +284,45 @@ const LaborManagement = () => {
                     <h1>👷 Labor Management</h1>
                     <p>Manage monthly salaries, edit records, and setup UPI payments for your staff.</p>
                 </div>
+
+                {unpaidLaborsCount > 0 && (
+                    <div className="unpaid-warning-banner">
+                        ⚠️ You have {unpaidLaborsCount} laborer(s) marked as unpaid. Please review their payment status.
+                    </div>
+                )}
+
+                {/* Payment Modal */}
+                {showPaymentModal && (
+                    <div className="payment-modal-overlay" onClick={() => setShowPaymentModal(false)}>
+                        <div className="payment-modal" onClick={e => e.stopPropagation()}>
+                            <h2>Process Payment</h2>
+                            <p>For: <strong>{paymentLabor?.name}</strong></p>
+                            
+                            <div className="form-group">
+                                <label>Month</label>
+                                <input type="month" value={paymentMonth} onChange={e => setPaymentMonth(e.target.value)} />
+                            </div>
+                            <div className="form-group">
+                                <label>Amount (₹)</label>
+                                <input type="number" value={paymentAmount} onChange={e => setPaymentAmount(e.target.value)} />
+                            </div>
+                            <div className="form-group">
+                                <label>Payment Method</label>
+                                <select value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)}>
+                                    <option value="cash">Cash</option>
+                                    <option value="upi">UPI</option>
+                                </select>
+                            </div>
+
+                            <div className="modal-actions">
+                                <button className="cancel-btn" onClick={() => setShowPaymentModal(false)}>Cancel</button>
+                                <button className="confirm-btn" onClick={handleProcessPayment} disabled={isSubmittingPayment}>
+                                    {isSubmittingPayment ? 'Processing...' : 'Confirm Payment'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 <div className="labor-content">
                     <div className="add-labor-section">
@@ -284,6 +377,11 @@ const LaborManagement = () => {
                                                             <div className="labor-info">
                                                                 <h4>{labor.name}</h4>
                                                                 <span className="salary">₹{labor.salary} / month</span>
+                                                                {labor.paymentStatus === 'paid' ? (
+                                                                    <span className="status-badge paid">Paid ({labor.lastPaidMonth})</span>
+                                                                ) : (
+                                                                    <span className="status-badge unpaid">Unpaid</span>
+                                                                )}
                                                             </div>
                                                             <div className="labor-actions">
                                                                 <button onClick={() => handleEditLabor(labor)} className="icon-btn edit" title="Edit">✏️</button>
@@ -310,6 +408,7 @@ const LaborManagement = () => {
                                                                     </label>
                                                                 )}
                                                             </div>
+                                                            <button className="mark-paid-btn" onClick={() => handleOpenPayment(labor)}>Record Payment</button>
                                                         </div>
                                                     </>
                                                 )}

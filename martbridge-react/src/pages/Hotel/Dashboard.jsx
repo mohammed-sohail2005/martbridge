@@ -51,6 +51,22 @@ const HotelDashboard = () => {
         }
     };
 
+    const handleRequestAction = async (storeId, action) => {
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/hotel/accept-link/${hotelId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ storeId, action })
+            });
+            if (res.ok) {
+                showAlert(`Request ${action} successfully`, 'Success');
+                fetchHotelData();
+            }
+        } catch (err) {
+            showAlert('Action failed', 'Error');
+        }
+    };
+
     const totalMonthlySalary = labors.reduce((sum, l) => sum + l.salary, 0);
 
     return (
@@ -78,21 +94,48 @@ const HotelDashboard = () => {
 
             <div className="main-overlay"></div>
 
-            <div className="center-content">
+            {hotelData.pendingRequests && hotelData.pendingRequests.length > 0 && (
+                <div className="notifications-container">
+                    {hotelData.pendingRequests.map(req => (
+                        <div key={req.storeId} className="notification-card">
+                            <div className="notif-info">
+                                <strong>{req.storeName}</strong> ({req.storeType}) wants to connect.
+                            </div>
+                            <div className="notif-actions">
+                                <button className="accept-btn" onClick={() => handleRequestAction(req.storeId, 'accepted')}>Agree</button>
+                                <button className="reject-btn" onClick={() => handleRequestAction(req.storeId, 'rejected')}>Decline</button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            <div className="center-content" style={{ paddingTop: hotelData.pendingRequests?.length > 0 ? '40px' : '100px' }}>
                 <h1>HOTEL DASHBOARD</h1>
                 <h2>{hotelData.hotelName}</h2>
                 <div className="linked-info">
                     <span>📍 {hotelData.location}</span>
-                    {hotelData.linkedStoreName && (
-                        <span className="store-badge">🔗 {hotelData.linkedStoreName} ({hotelData.storeType})</span>
-                    )}
+                    <div className="badges-container">
+                        {hotelData.departmentStoreId && <span className="store-badge">🏬 Department Store</span>}
+                        {hotelData.meatStoreId && <span className="store-badge">🥩 Meat Store</span>}
+                        {hotelData.vegetableStoreId && <span className="store-badge">🥦 Vegetable Store</span>}
+                        {!hotelData.departmentStoreId && !hotelData.meatStoreId && !hotelData.vegetableStoreId && hotelData.linkedStoreName && (
+                            <span className="store-badge">🔗 {hotelData.linkedStoreName} ({hotelData.storeType})</span>
+                        )}
+                    </div>
                 </div>
             </div>
 
             <div className="dash-sections">
-                <div className="dash-card" onClick={() => navigate('/hotel/bills')}>
+                <div className="dash-card">
                     <h3>🧾 View Bills</h3>
                     <p>Track your orders and payments</p>
+                    <div className="store-columns">
+                        {(hotelData.departmentStoreId || hotelData.storeType === 'department') && <button onClick={() => navigate('/hotel/bills?store=department')}>Department</button>}
+                        {(hotelData.meatStoreId || hotelData.storeType === 'meat') && <button onClick={() => navigate('/hotel/bills?store=meat')}>Meat</button>}
+                        {(hotelData.vegetableStoreId || hotelData.storeType === 'vegetable') && <button onClick={() => navigate('/hotel/bills?store=vegetable')}>Vegetable</button>}
+                        {!hotelData.departmentStoreId && !hotelData.meatStoreId && !hotelData.vegetableStoreId && !hotelData.storeType && <button onClick={() => navigate('/hotel/bills')}>View All</button>}
+                    </div>
                 </div>
                 
                 <div className="dash-card labor-card" onClick={() => navigate('/hotel/labor')}>
@@ -101,9 +144,15 @@ const HotelDashboard = () => {
                     <div className="summary-val">Total: ₹{totalMonthlySalary}</div>
                 </div>
 
-                <div className="dash-card" onClick={() => navigate('/hotel/place-order')}>
+                <div className="dash-card">
                     <h3>🛒 Place Orders</h3>
                     <p>Order from linked shops</p>
+                    <div className="store-columns">
+                        {(hotelData.departmentStoreId || hotelData.storeType === 'department') && <button onClick={() => navigate('/hotel/place-order?store=department')}>Department</button>}
+                        {(hotelData.meatStoreId || hotelData.storeType === 'meat') && <button onClick={() => navigate('/hotel/place-order?store=meat')}>Meat</button>}
+                        {(hotelData.vegetableStoreId || hotelData.storeType === 'vegetable') && <button onClick={() => navigate('/hotel/place-order?store=vegetable')}>Vegetable</button>}
+                        {!hotelData.departmentStoreId && !hotelData.meatStoreId && !hotelData.vegetableStoreId && !hotelData.storeType && <button onClick={() => navigate('/hotel/place-order')}>Order</button>}
+                    </div>
                 </div>
             </div>
 
@@ -137,8 +186,21 @@ const HotelDashboard = () => {
                 .dash-card { background: rgba(255, 255, 255, 0.12); backdrop-filter: blur(14px); border-radius: 22px; padding: 28px; min-height: 160px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; cursor: pointer; transition: .3s; border: 1px solid rgba(255, 255, 255, 0.1); }
                 .dash-card:hover { transform: translateY(-6px) scale(1.02); background: rgba(11, 177, 93, 0.25); }
                 
+                .store-columns { display: flex; gap: 10px; margin-top: 15px; width: 100%; justify-content: center; flex-wrap: wrap; }
+                .store-columns button { flex: 1; min-width: 80px; padding: 8px 12px; border: none; border-radius: 8px; background: rgba(255,255,255,0.2); color: white; cursor: pointer; transition: 0.2s; font-weight: 600; font-size: 13px; }
+                .store-columns button:hover { background: #00b050; }
+
                 .labor-card { border: 1px solid rgba(255, 193, 7, 0.4); }
                 .labor-card .summary-val { margin-top: 10px; font-weight: 800; color: #ffc107; font-size: 20px; }
+
+                .notifications-container { position: relative; z-index: 10; max-width: 600px; margin: 80px auto 0; padding: 0 20px; }
+                .notification-card { background: rgba(255, 255, 255, 0.95); color: #222; border-radius: 12px; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+                .notif-info { font-size: 14px; }
+                .notif-actions { display: flex; gap: 10px; }
+                .accept-btn { background: #00b050; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+                .reject-btn { background: #ff4d4d; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+
+                .badges-container { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 10px; }
 
 
 

@@ -366,3 +366,126 @@
     }
 }
 
+/* Payment Modal Styles */
+.payment-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(5px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.payment-modal {
+    background: #1e293b;
+    border-radius: 16px;
+    padding: 30px;
+    width: 90%;
+    max-width: 400px;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+.payment-modal h2 {
+    margin-bottom: 10px;
+    color: #f8fafc;
+}
+
+.payment-modal p {
+    margin-bottom: 20px;
+    color: #94a3b8;
+}
+
+.form-group {
+    margin-bottom: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.form-group label {
+    font-size: 0.9rem;
+    color: #cbd5e1;
+}
+
+.form-group input, .form-group select {
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(15, 23, 42, 0.6);
+    color: #fff;
+    font-size: 1rem;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 15px;
+    margin-top: 25px;
+}
+
+.confirm-btn {
+    flex: 2;
+    background: #10b981;
+    color: white;
+    border: none;
+    padding: 10px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.confirm-btn:disabled {
+    background: #64748b;
+    cursor: not-allowed;
+}
+
+.mark-paid-btn {
+    width: 100%;
+    margin-top: 10px;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    color: #cbd5e1;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.mark-paid-btn:hover {
+    background: rgba(16, 185, 129, 0.1);
+    border-color: rgba(16, 185, 129, 0.3);
+    color: #10b981;
+}
+
+.status-badge {
+    font-size: 0.75rem;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-weight: 600;
+    margin-left: 10px;
+    vertical-align: middle;
+}
+
+.status-badge.paid {
+    background: rgba(16, 185, 129, 0.15);
+    color: #10b981;
+}
+
+.status-badge.unpaid {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+}
+
+.unpaid-warning-banner {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #ef4444;
+    padding: 12px 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    font-weight: 600;
+    text-align: center;
+}
+

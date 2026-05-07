@@ -8,8 +8,17 @@ const hotelSchema = new mongoose.Schema({
   phone: { type: String, required: true },
   location: { type: String, required: true },
   password: { type: String, required: true },
-  linkedStoreId: { type: mongoose.Schema.Types.ObjectId, required: true },
+  linkedStoreId: { type: mongoose.Schema.Types.ObjectId },
   storeType: { type: String, enum: ["department", "meat", "vegetable"], default: "department" },
+  departmentStoreId: { type: mongoose.Schema.Types.ObjectId },
+  meatStoreId: { type: mongoose.Schema.Types.ObjectId },
+  vegetableStoreId: { type: mongoose.Schema.Types.ObjectId },
+  pendingRequests: [{
+    storeId: { type: mongoose.Schema.Types.ObjectId, required: true },
+    storeType: { type: String, enum: ["department", "meat", "vegetable"], required: true },
+    storeName: { type: String, required: true },
+    status: { type: String, enum: ["pending", "accepted", "rejected"], default: "pending" }
+  }],
   morningTemplate: [{
     name: String,
     price: Number,

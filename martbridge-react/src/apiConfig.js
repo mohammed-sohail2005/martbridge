@@ -1,6 +1,6 @@
 const config = {
-    API_BASE_URL: window.location.hostname === 'localhost' 
-        ? 'http://localhost:5000' 
+    API_BASE_URL: import.meta.env.DEV
+        ? '' // Let Vite proxy handle local requests (bypasses Windows Firewall on port 5000)
         : 'https://powerful-solace-production-4309.up.railway.app' 
 };
 
